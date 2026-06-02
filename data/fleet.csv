@@ -1,0 +1,3 @@
+code,plate,make,model,year,type,status,project,custodian,fuel_type,odometer,service_every_km,service_every_months,last_service_date,last_service_km,purchase_date,purchase_value,registration_expires,insurance_expires,inspection_expires
+EXAMPLE-1,ABC 1234,Toyota,Hilux,2022,pickup,active,Field Ops,,diesel,84200,5000,3,2026-03-15,80000,2022-04-10,38000,2026-06-20,2026-09-01,2026-06-10
+EXAMPLE-2,XYZ 8803,Toyota,Land Cruiser,2021,suv,active,Harvest Q3,,diesel,121500,5000,3,2026-05-01,120000,2021-03-01,62000,2026-05-30,2026-07-15,

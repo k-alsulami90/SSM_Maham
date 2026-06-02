@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(mkdir -p /tmp/design_extract)",
+      "Bash(tar -xzf webfetch-1780213371211-u0twyv.bin -C /tmp/design_extract)",
+      "Bash(echo \"---tar exit: $?---\")",
+      "Read(//tmp/**)",
+      "Bash(cygpath -w /tmp/design_extract/untitled)",
+      "Read(//c/Users/user-0103/AppData/Local/Temp/design_extract/untitled/**)",
+      "Bash(npm -v)",
+      "Bash(npm install *)",
+      "Bash(node scripts/gen-icons.mjs)",
+      "Bash(npm run *)",
+      "PowerShell($p = Get-NetTCPConnection -LocalPort 4317 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique; if \\($p\\) { $p | ForEach-Object { try { Stop-Process -Id $_ -Force -ErrorAction Stop } catch {} } ; \"killed $p\" } else { \"none\" })",
+      "PowerShell(Start-Process \"http://localhost:5173/\")",
+      "PowerShell(\"opened\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(npm test *)",
+      "PowerShell($p = Get-NetTCPConnection -LocalPort 5173 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique; if \\($p\\) { $p | ForEach-Object { try { Stop-Process -Id $_ -Force -ErrorAction Stop } catch {} }; \"stopped $p\" } else { \"none running\" })",
+      "Bash(curl -s -o /dev/null -w \"dev: %{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(curl -s -o /dev/null -w \"font: %{http_code}\\\\n\" http://localhost:5173/fonts/thmanyahserifdisplay-Regular.woff2)",
+      "Bash(node scripts/parse-fuel.mjs)",
+      "Bash(node -e \"const fs=require\\('fs'\\);const p='src/data/fleet.js';const L=fs.readFileSync\\(p,'utf8'\\).split\\('\\\\n'\\);L.splice\\(63,77,'export const VEHICLES = FLEET_SEED.map\\(veh\\);'\\);fs.writeFileSync\\(p,L.join\\('\\\\n'\\)\\);console.log\\('lines now',L.length\\)\")",
+      "Bash(sed -n '60,70p' src/data/fleet.js)",
+      "Bash(node -e ' *)",
+      "Bash(grep -n \"export function AssetRegister\\\\|function AssetProfile\\\\|<h1 className=\\\\\"h\\\\\">{t.asset_register}\\\\|t.report_issue\\\\|{form && form !== \\\\\"assign\\\\\"\\\\|page-header\\\\|const { settings, dispatch } = useStore\" src/screens/Assets.jsx)",
+      "Bash(git --version)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Bash(git init *)",
+      "Bash(git config *)",
+      "Bash(git check-ignore *)",
+      "Bash(git add *)",
+      "Bash(grep -i \"\\\\.env$\")",
+      "Bash(printf '\\\\n.claude\\\\n')",
+      "Bash(git rm *)",
+      "Bash(git commit -q -m ' *)",
+      "Bash(git remote *)"
+    ]
+  }
+}

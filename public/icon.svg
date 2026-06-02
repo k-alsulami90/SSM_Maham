@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="g" cx="32%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#7faa86"/>
+      <stop offset="70%" stop-color="#3f6e4e"/>
+      <stop offset="100%" stop-color="#2f5640"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#g)"/>
+  <text x="50%" y="54%" text-anchor="middle" dominant-baseline="central"
+        font-family="'IBM Plex Sans Arabic','Segoe UI',sans-serif" font-size="300"
+        font-weight="700" fill="#fdf8ec">م</text>
+</svg>
