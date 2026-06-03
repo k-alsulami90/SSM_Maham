@@ -26,17 +26,27 @@ export default function MobileTabBar({ active, moreOpen, onNav, onMore, onCreate
     </button>
   );
 
+  const more = lang === "ar" ? "المزيد" : "More";
   return (
     <nav className="mob-tabbar" aria-label={t.workspace}>
-      <Tab id="dashboard" icon={isManager ? "dashboard" : "tasks"} label={isManager ? t.home : t.my_tasks} count={isManager ? 0 : counts.mine} />
-      <Tab id="hub" icon="kanban" label={t.task_hub} />
-      {isManager && (
-        <button className="mtab-fab" onClick={onCreate} aria-label={t.new_task}>
-          <Icon name="plus" size={24} strokeWidth={2.4} />
-        </button>
+      {isManager ? (
+        <>
+          <Tab id="hub" icon="kanban" label={t.task_hub} />
+          <Tab id="approvals" icon="approve" label={t.approvals} count={counts.review} />
+          <button className="mtab-fab" onClick={onCreate} aria-label={t.new_task}>
+            <Icon name="plus" size={24} strokeWidth={2.4} />
+          </button>
+          <Tab id="activity" icon="activity" label={t.activity} />
+          <Tab id="more" icon="list" label={more} onClick={onMore} on={moreOpen} />
+        </>
+      ) : (
+        <>
+          <Tab id="dashboard" icon="tasks" label={t.my_tasks} count={counts.mine} />
+          <Tab id="hub" icon="kanban" label={t.task_hub} />
+          <Tab id="inbox" icon="inbox" label={t.inbox} count={counts.review} />
+          <Tab id="more" icon="list" label={more} onClick={onMore} on={moreOpen} />
+        </>
       )}
-      <Tab id={isManager ? "approvals" : "inbox"} icon={isManager ? "approve" : "inbox"} label={isManager ? t.approvals : t.inbox} count={counts.review} />
-      <Tab id="more" icon="list" label={lang === "ar" ? "المزيد" : "More"} onClick={onMore} on={moreOpen} />
     </nav>
   );
 }

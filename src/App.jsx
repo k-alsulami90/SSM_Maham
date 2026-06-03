@@ -145,12 +145,20 @@ export default function App() {
 
   // Keep selected screen valid when the role changes.
   useEffect(() => {
-    const allowed = role === "manager"
-      ? ["dashboard", "hub", "approvals", "recurring", "team", "activity", "fleet", "vehicles", "assets", "register", "project", "suppliers", "maintenance"]
-      : ["dashboard", "hub", "recurring", "inbox", "activity"];
-    if (auth.role === "admin") allowed.push("users");
-    if (!allowed.includes(screen)) setScreen("dashboard");
-  }, [role, screen, auth.role]);
+    // Mobile is intentionally task-focused — no dashboards / ops modules.
+    let allowed;
+    if (isMobile) {
+      allowed = role === "manager"
+        ? ["hub", "approvals", "recurring", "activity"]
+        : ["dashboard", "hub", "inbox", "recurring", "activity"];
+    } else {
+      allowed = role === "manager"
+        ? ["dashboard", "hub", "approvals", "recurring", "team", "activity", "fleet", "vehicles", "assets", "register", "project", "suppliers", "maintenance"]
+        : ["dashboard", "hub", "recurring", "inbox", "activity"];
+      if (auth.role === "admin") allowed.push("users");
+    }
+    if (!allowed.includes(screen)) setScreen(allowed[0]);
+  }, [role, screen, auth.role, isMobile]);
 
   const counts = {
     review: tasks.filter((x) => x.status === "review").length,
@@ -323,7 +331,7 @@ export default function App() {
   return (
     <div className={`app-shell ${isMobile ? "is-mobile" : ""} ${navOpen ? "nav-open" : ""}`}>
       {navOpen && <div className="nav-scrim" onClick={() => setNavOpen(false)} />}
-      <Sidebar active={screen} onNav={nav} onOpenProject={openProject} onAddProject={addProject} counts={counts} onClose={() => setNavOpen(false)} />
+      <Sidebar active={screen} onNav={nav} onOpenProject={openProject} onAddProject={addProject} counts={counts} onClose={() => setNavOpen(false)} isMobile={isMobile} />
       <div className="main">
         {banner}
         <Topbar

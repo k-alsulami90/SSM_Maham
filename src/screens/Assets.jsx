@@ -154,18 +154,24 @@ export function AssetRegister({ onOpenVehicle, onOpenAsset, onNav }) {
       id: v.id, kind: "vehicle", category: "vehicle", name: F.vehicleLabel(v), tag: v.plate,
       project: v.project, custodian: v.custodian, value: v.purchaseValue,
       make: v.make || "", model: v.model || "", qty: 1,
+      groupLabel: [v.make, v.model].filter(Boolean).join(" ") || F.vehicleLabel(v),
       location: D.projectName(D.findProject(v.project), lang),
       statusLabel: F.vehicleStatusLabel(v, lang), statusDot: F.VEHICLE_STATUS_META[v.status].dot,
       open: () => onOpenVehicle(v.id),
     })),
-    ...assets.map((a) => ({
-      id: a.id, kind: "asset", category: a.category, name: A.assetName(a, lang), tag: a.tag,
-      project: a.project, custodian: a.custodian, value: a.purchaseValue,
-      make: a.make || "", model: a.model || "", qty: a.tracking === "bulk" ? (Number(a.quantity) || 1) : 1,
-      location: A.assetLocation(a, lang) || D.projectName(D.findProject(a.project), lang),
-      statusLabel: A.assetStatusLabel(a, lang), statusDot: A.ASSET_STATUS_META[a.status].dot,
-      open: () => onOpenAsset(a.id),
-    })),
+    ...assets.map((a) => {
+      const arName = A.assetName(a, "ar");                       // always Arabic name
+      const label = [arName, a.make, a.model].filter(Boolean).join(" ");
+      return {
+        id: a.id, kind: "asset", category: a.category, name: arName, tag: a.tag,
+        project: a.project, custodian: a.custodian, value: a.purchaseValue,
+        make: a.make || "", model: a.model || "", qty: a.tracking === "bulk" ? (Number(a.quantity) || 1) : 1,
+        groupLabel: label || arName,
+        location: A.assetLocation(a, lang) || D.projectName(D.findProject(a.project), lang),
+        statusLabel: A.assetStatusLabel(a, lang), statusDot: A.ASSET_STATUS_META[a.status].dot,
+        open: () => onOpenAsset(a.id),
+      };
+    }),
   ];
   if (role === "member") rows = rows.filter((r) => r.custodian === currentUserId);
   if (cat) rows = rows.filter((r) => r.category === cat);
@@ -176,7 +182,7 @@ export function AssetRegister({ onOpenVehicle, onOpenAsset, onNav }) {
   // Build grouped structure: category → item (make/model/name) → {total, byLoc, items}.
   const groupsByCat = {};
   rows.forEach((r) => {
-    const itemKey = ([r.make, r.model].filter(Boolean).join(" ") || r.name).trim() || "—";
+    const itemKey = (r.groupLabel || r.name || "—").trim();
     (groupsByCat[r.category] = groupsByCat[r.category] || {});
     const g = groupsByCat[r.category][itemKey] || (groupsByCat[r.category][itemKey] = { label: itemKey, total: 0, byLoc: {}, items: [] });
     g.total += r.qty;

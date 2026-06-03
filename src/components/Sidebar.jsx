@@ -8,7 +8,7 @@ import { useAuth } from "../auth/AuthProvider.jsx";
 
 /* Left navigation. Items adapt to the signed-in role (RBAC). The user card
    opens a popover to switch roles (mock auth) and reset demo data. */
-export default function Sidebar({ active, onNav, onOpenProject, onAddProject, counts, onClose }) {
+export default function Sidebar({ active, onNav, onOpenProject, onAddProject, counts, onClose, isMobile }) {
   const { settings, dispatch } = useStore();
   const { lang, role, currentUserId } = settings;
   const t = I18N[lang];
@@ -16,24 +16,32 @@ export default function Sidebar({ active, onNav, onOpenProject, onAddProject, co
   const currentUser = D.findUser(currentUserId);
   const [menu, setMenu] = useState(false);
 
+  // On mobile we keep it task-focused (no analytics dashboard / team roster).
   const items =
     role === "manager"
-      ? [
-          { id: "dashboard", label: t.dashboard, icon: "dashboard" },
-          { id: "hub", label: t.task_hub, icon: "hub" },
-          { id: "approvals", label: t.approvals, icon: "approve", count: counts.review },
-          { id: "recurring", label: t.recurring, icon: "repeat" },
-          { id: "team", label: t.team, icon: "team" },
-          { id: "activity", label: t.activity, icon: "activity" },
-        ]
+      ? (isMobile
+          ? [
+              { id: "hub", label: t.task_hub, icon: "hub" },
+              { id: "approvals", label: t.approvals, icon: "approve", count: counts.review },
+              { id: "recurring", label: t.recurring, icon: "repeat" },
+              { id: "activity", label: t.activity, icon: "activity" },
+            ]
+          : [
+              { id: "dashboard", label: t.dashboard, icon: "dashboard" },
+              { id: "hub", label: t.task_hub, icon: "hub" },
+              { id: "approvals", label: t.approvals, icon: "approve", count: counts.review },
+              { id: "recurring", label: t.recurring, icon: "repeat" },
+              { id: "team", label: t.team, icon: "team" },
+              { id: "activity", label: t.activity, icon: "activity" },
+            ])
       : [
           { id: "dashboard", label: t.my_tasks, icon: "tasks", count: counts.mine },
           { id: "hub", label: t.task_hub, icon: "hub" },
-          { id: "recurring", label: t.recurring, icon: "repeat" },
           { id: "inbox", label: t.inbox, icon: "inbox", count: counts.review },
+          { id: "recurring", label: t.recurring, icon: "repeat" },
           { id: "activity", label: t.activity, icon: "activity" },
         ];
-  if (auth.role === "admin") items.push({ id: "users", label: lang === "ar" ? "المستخدمون" : "Users", icon: "team" });
+  if (auth.role === "admin" && !isMobile) items.push({ id: "users", label: lang === "ar" ? "المستخدمون" : "Users", icon: "team" });
 
   return (
     <aside className="sidebar">
@@ -63,18 +71,18 @@ export default function Sidebar({ active, onNav, onOpenProject, onAddProject, co
         ))}
       </div>
 
-      {/* Fleet / assets / projects are operational areas — managers & admins only.
-          Members get a focused task-only sidebar. */}
-      {role === "manager" && (
+      {/* Fleet / assets / maintenance are operational areas — shown to managers
+          & admins on desktop only. Mobile stays task-focused. */}
+      {role === "manager" && !isMobile && (
         <div className="side-section">
-          <div className="label">{t.assets}</div>
+          <div className="label">{lang === "ar" ? "الأصول والصيانة" : "Assets & Maintenance"}</div>
           {[
-            { id: "assets", label: t.assets_dashboard, icon: "gauge" },
             { id: "register", label: t.asset_register, icon: "box" },
-            { id: "vehicles", label: t.vehicles, icon: "car" },
-            { id: "fleet", label: t.fleet_dashboard, icon: "car" },
+            { id: "assets", label: t.assets_dashboard, icon: "gauge" },
             { id: "maintenance", label: t.maintenance, icon: "wrench" },
             { id: "suppliers", label: t.suppliers, icon: "team" },
+            { id: "fleet", label: t.fleet_dashboard, icon: "car" },
+            { id: "vehicles", label: t.vehicles, icon: "car" },
           ].map((it) => (
             <button key={it.id} onClick={() => onNav(it.id)} className={`nav-item ${active === it.id ? "active" : ""}`}>
               <Icon name={it.icon} className="icon" />
@@ -84,7 +92,7 @@ export default function Sidebar({ active, onNav, onOpenProject, onAddProject, co
         </div>
       )}
 
-      {role === "manager" && (
+      {role === "manager" && !isMobile && (
         <div className="side-section">
           <div className="label" style={{ display: "flex", alignItems: "center" }}>
             <span>{t.projects}</span>

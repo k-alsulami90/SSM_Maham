@@ -2,8 +2,8 @@
 
 export const I18N = {
   en: {
-    appName: "Mahām",
-    tagline: "Team task ops",
+    appName: "Support Services",
+    tagline: "Tasks · Assets · Maintenance",
     // Suppliers
     suppliers: "Suppliers",
     suppliers_sub: "Vendors, workshops & parts suppliers",
@@ -349,8 +349,8 @@ export const I18N = {
     columns: { backlog: "Backlog", progress: "In Progress", review: "In Review", done: "Done" },
   },
   ar: {
-    appName: "مهام",
-    tagline: "إدارة مهام الفريق",
+    appName: "إدارة الخدمات المساندة",
+    tagline: "المهام والأصول والصيانة",
     // الموردون
     suppliers: "الموردون",
     suppliers_sub: "الموردون وورش الصيانة وقطع الغيار",
@@ -376,7 +376,7 @@ export const I18N = {
     kpi_service: "الخدمة والاستجابة",
     overall_score: "التقييم العام",
     rate_supplier: "تقييم المورد",
-    rate_supplier_hint: "قيّم المورد في كل معيار (من ١ إلى ٥).",
+    rate_supplier_hint: "قيّم المورد في كل معيار (من 1 إلى 5).",
     // الصيانة
     maintenance: "الصيانة",
     maintenance_sub: "كل الأصول — المركبات والمعدات والمرافق",
