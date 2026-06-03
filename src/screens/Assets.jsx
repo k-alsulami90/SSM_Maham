@@ -144,31 +144,25 @@ export function AssetRegister({ onOpenVehicle, onOpenAsset, onNav }) {
   const { lang, role, currentUserId } = settings;
   const t = I18N[lang];
   const [cat, setCat] = useState(null);
+  const [view, setView] = useState("grouped");
+  const [adding, setAdding] = useState(false);
+  const [open, setOpen] = useState({});   // expanded item groups
 
-  const addAsset = () => {
-    const id = "A-" + Date.now().toString(36);
-    dispatch({
-      type: "ADD_ASSET",
-      asset: {
-        id, tag: "", name: "New asset", ar_name: "", category: "it", status: "in_use",
-        project: D.getProjects()[0]?.id || "p1", custodian: "", location: "", ar_location: "",
-        purchaseDate: "", purchaseValue: 0, currency: "SAR", schedule: null, documents: [], maintenance: [],
-      },
-    });
-    onOpenAsset(id);
-  };
-
-  // Unified rows.
+  // Unified rows, with grouping fields (make/model/quantity/location).
   let rows = [
     ...vehicles.map((v) => ({
       id: v.id, kind: "vehicle", category: "vehicle", name: F.vehicleLabel(v), tag: v.plate,
       project: v.project, custodian: v.custodian, value: v.purchaseValue,
+      make: v.make || "", model: v.model || "", qty: 1,
+      location: D.projectName(D.findProject(v.project), lang),
       statusLabel: F.vehicleStatusLabel(v, lang), statusDot: F.VEHICLE_STATUS_META[v.status].dot,
       open: () => onOpenVehicle(v.id),
     })),
     ...assets.map((a) => ({
       id: a.id, kind: "asset", category: a.category, name: A.assetName(a, lang), tag: a.tag,
       project: a.project, custodian: a.custodian, value: a.purchaseValue,
+      make: a.make || "", model: a.model || "", qty: a.tracking === "bulk" ? (Number(a.quantity) || 1) : 1,
+      location: A.assetLocation(a, lang) || D.projectName(D.findProject(a.project), lang),
       statusLabel: A.assetStatusLabel(a, lang), statusDot: A.ASSET_STATUS_META[a.status].dot,
       open: () => onOpenAsset(a.id),
     })),
@@ -176,7 +170,19 @@ export function AssetRegister({ onOpenVehicle, onOpenAsset, onNav }) {
   if (role === "member") rows = rows.filter((r) => r.custodian === currentUserId);
   if (cat) rows = rows.filter((r) => r.category === cat);
 
+  const totalUnits = rows.reduce((s, r) => s + r.qty, 0);
   const cats = ["vehicle", ...Object.keys(A.ASSET_CATEGORY_META)];
+
+  // Build grouped structure: category → item (make/model/name) → {total, byLoc, items}.
+  const groupsByCat = {};
+  rows.forEach((r) => {
+    const itemKey = ([r.make, r.model].filter(Boolean).join(" ") || r.name).trim() || "—";
+    (groupsByCat[r.category] = groupsByCat[r.category] || {});
+    const g = groupsByCat[r.category][itemKey] || (groupsByCat[r.category][itemKey] = { label: itemKey, total: 0, byLoc: {}, items: [] });
+    g.total += r.qty;
+    g.byLoc[r.location] = (g.byLoc[r.location] || 0) + r.qty;
+    g.items.push(r);
+  });
   const cols = "1fr 110px 120px 110px 110px 90px";
 
   return (
@@ -184,18 +190,23 @@ export function AssetRegister({ onOpenVehicle, onOpenAsset, onNav }) {
       <div className="page-header">
         <div>
           <h1 className="h">{t.asset_register}</h1>
-          <p className="sub">{rows.length} {t.assets}</p>
+          <p className="sub">{totalUnits} {t.units_count} · {rows.length} {t.assets}</p>
         </div>
         {role === "manager" && (
           <div className="actions">
             <button className="btn btn-secondary" onClick={() => onNav("assets")}><Icon name="gauge" size={13} /> {t.assets_dashboard}</button>
-            <button className="btn btn-primary" onClick={addAsset}><Icon name="plus" size={13} /> {t.add_asset}</button>
+            <button className="btn btn-primary" onClick={() => setAdding(true)}><Icon name="plus" size={13} /> {t.add_asset}</button>
           </div>
         )}
       </div>
 
       <div className="filters">
-        <button className={`filter-pill ${!cat ? "" : ""}`} onClick={() => setCat(null)} style={cat ? {} : { background: "var(--acc-moss-bg)", color: "var(--acc-forest)", borderColor: "var(--acc-moss)" }}>{t.all_categories}</button>
+        <div className="tabbar">
+          <button className={view === "grouped" ? "active" : ""} onClick={() => setView("grouped")}><Icon name="layers" size={11} style={{ marginInlineEnd: 4 }} /> {t.view_grouped}</button>
+          <button className={view === "detailed" ? "active" : ""} onClick={() => setView("detailed")}><Icon name="list" size={11} style={{ marginInlineEnd: 4 }} /> {t.view_detailed}</button>
+        </div>
+        <div className="divider-v" />
+        <button className="filter-pill" onClick={() => setCat(null)} style={cat ? {} : { background: "var(--acc-moss-bg)", color: "var(--acc-forest)", borderColor: "var(--acc-moss)" }}>{t.all_categories}</button>
         {cats.map((c) => (
           <button key={c} className="filter-pill" onClick={() => setCat(c)} style={cat === c ? { background: "var(--acc-moss-bg)", color: "var(--acc-forest)", borderColor: "var(--acc-moss)" } : {}}>
             <Icon name={catIcon(c)} size={12} /> {catLabel(c, lang)}
@@ -203,28 +214,190 @@ export function AssetRegister({ onOpenVehicle, onOpenAsset, onNav }) {
         ))}
       </div>
 
-      <div className="list-wrap">
-        <div className="list-row header" style={{ gridTemplateColumns: cols }}>
-          <span>{t.asset}</span><span>{t.tag}</span><span>{t.project}</span><span>{t.custodian}</span><span>{t.purchase_value}</span><span>{t.filter_status}</span>
-        </div>
-        {rows.map((r) => {
-          const u = D.findUser(r.custodian);
-          const p = D.findProject(r.project);
-          return (
-            <div key={r.id} className="list-row" style={{ gridTemplateColumns: cols }} onClick={r.open}>
-              <div className="ttl" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span className="doc-ico" style={{ width: 26, height: 26, color: "var(--ink-500)" }}><Icon name={catIcon(r.category)} size={15} /></span>
-                <span>{r.name}</span>
+      {/* ---------- Grouped view ---------- */}
+      {view === "grouped" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {cats.filter((c) => groupsByCat[c]).map((c) => {
+            const items = Object.values(groupsByCat[c]).sort((a, b) => b.total - a.total);
+            const catTotal = items.reduce((s, g) => s + g.total, 0);
+            return (
+              <div className="panel" key={c}>
+                <div className="panel-head">
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span className="doc-ico" style={{ width: 26, height: 26, color: "var(--ink-500)" }}><Icon name={catIcon(c)} size={15} /></span>
+                    <div className="title">{catLabel(c, lang)}</div>
+                  </div>
+                  <div className="right mono" style={{ fontWeight: 700 }}>{catTotal}</div>
+                </div>
+                <div style={{ padding: "4px 0" }}>
+                  {items.map((g) => {
+                    const key = c + "|" + g.label;
+                    const isOpen = open[key];
+                    return (
+                      <div key={key}>
+                        <button
+                          className="group-row"
+                          onClick={() => setOpen((o) => ({ ...o, [key]: !o[key] }))}
+                          style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", textAlign: "start", borderTop: "1px solid var(--line-soft)" }}
+                        >
+                          <Icon name={isOpen ? "chev_down" : "chev_right"} size={14} style={{ color: "var(--ink-400)", flexShrink: 0 }} />
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontWeight: 600, fontSize: 14 }} dir="auto">{g.label}</div>
+                            <div style={{ fontSize: 11.5, color: "var(--ink-500)", marginTop: 2, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              {Object.entries(g.byLoc).map(([loc, n]) => (
+                                <span key={loc} dir="auto">{loc} <b className="mono" style={{ color: "var(--ink-700)" }}>{n}</b></span>
+                              ))}
+                            </div>
+                          </div>
+                          <span style={{ fontWeight: 700, fontSize: 17, color: "var(--acc-forest)" }} className="mono">×{g.total}</span>
+                        </button>
+                        {isOpen && (
+                          <div style={{ background: "var(--bg-sand)", padding: "2px 0" }}>
+                            {g.items.map((r) => {
+                              const u = D.findUser(r.custodian);
+                              return (
+                                <div key={r.id} className="list-row" style={{ gridTemplateColumns: "1fr 90px 100px 90px", paddingInlineStart: 34 }} onClick={r.open}>
+                                  <div className="ttl" dir="auto">{r.name}{r.qty > 1 && <span className="mono muted" style={{ fontSize: 11 }}> ×{r.qty}</span>}</div>
+                                  <div className="mono" style={{ fontSize: 11.5, color: "var(--ink-500)" }}>{r.tag || "—"}</div>
+                                  <div className="who"><Avatar user={u} size={18} /><span style={{ fontSize: 12 }}>{D.userName(u, lang).split(" ")[0]}</span></div>
+                                  <div><span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, color: "var(--ink-700)" }}><span style={{ width: 7, height: 7, borderRadius: 2, background: r.statusDot }} />{r.statusLabel}</span></div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="mono" style={{ fontSize: 12, color: "var(--ink-500)" }}>{r.tag}</div>
-              <div style={{ fontSize: 12.5 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: D.projectDot(r.project) }} />{D.projectName(p, lang)}</span></div>
-              <div className="who"><Avatar user={u} size={20} /><span style={{ fontSize: 12.5 }}>{D.userName(u, lang).split(" ")[0]}</span></div>
-              <div className="mono" style={{ fontSize: 12.5 }}>{r.value ? D.fmtMoney(r.value) : "—"}</div>
-              <div><span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 500, color: "var(--ink-700)" }}><span style={{ width: 7, height: 7, borderRadius: 2, background: r.statusDot }} />{r.statusLabel}</span></div>
+            );
+          })}
+          {rows.length === 0 && <div className="list-wrap"><div className="empty">{t.no_assets}</div></div>}
+        </div>
+      )}
+
+      {/* ---------- Detailed view ---------- */}
+      {view === "detailed" && (
+        <div className="list-wrap">
+          <div className="list-row header" style={{ gridTemplateColumns: cols }}>
+            <span>{t.asset}</span><span>{t.tag}</span><span>{t.project}</span><span>{t.custodian}</span><span>{t.purchase_value}</span><span>{t.filter_status}</span>
+          </div>
+          {rows.map((r) => {
+            const u = D.findUser(r.custodian);
+            const p = D.findProject(r.project);
+            return (
+              <div key={r.id} className="list-row" style={{ gridTemplateColumns: cols }} onClick={r.open}>
+                <div className="ttl" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span className="doc-ico" style={{ width: 26, height: 26, color: "var(--ink-500)" }}><Icon name={catIcon(r.category)} size={15} /></span>
+                  <span dir="auto">{r.name}{r.qty > 1 && <span className="mono muted" style={{ fontSize: 11 }}> ×{r.qty}</span>}</span>
+                </div>
+                <div className="mono" style={{ fontSize: 12, color: "var(--ink-500)" }}>{r.tag}</div>
+                <div style={{ fontSize: 12.5 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: D.projectDot(r.project) }} />{D.projectName(p, lang)}</span></div>
+                <div className="who"><Avatar user={u} size={20} /><span style={{ fontSize: 12.5 }}>{D.userName(u, lang).split(" ")[0]}</span></div>
+                <div className="mono" style={{ fontSize: 12.5 }}>{r.value ? D.fmtMoney(r.value) : "—"}</div>
+                <div><span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 500, color: "var(--ink-700)" }}><span style={{ width: 7, height: 7, borderRadius: 2, background: r.statusDot }} />{r.statusLabel}</span></div>
+              </div>
+            );
+          })}
+          {rows.length === 0 && <div className="empty">{t.no_assets}</div>}
+        </div>
+      )}
+
+      {adding && <AddAssetModal lang={lang} t={t} dispatch={dispatch} onClose={() => setAdding(false)} onOpenAsset={onOpenAsset} />}
+    </div>
+  );
+}
+
+/* Add an asset — individual (serialized) or bulk (a counted quantity). */
+function AddAssetModal({ lang, t, dispatch, onClose, onOpenAsset }) {
+  const [s, setS] = useState({
+    tracking: "unique", name: "", arName: "", category: "it", make: "", model: "",
+    project: D.getProjects()[0]?.id || "p1", custodian: "", location: "", tag: "", serial: "",
+    quantity: 1, purchaseValue: "", purchaseDate: "", status: "in_use",
+  });
+  const set = (k, v) => setS((p) => ({ ...p, [k]: v }));
+  const isBulk = s.tracking === "bulk";
+
+  const save = () => {
+    const fallbackName = [s.make, s.model].filter(Boolean).join(" ").trim();
+    if (!s.name.trim() && !fallbackName) return;
+    const id = "A-" + Date.now().toString(36);
+    dispatch({
+      type: "ADD_ASSET",
+      asset: {
+        id, tag: s.tag.trim(), name: s.name.trim() || fallbackName, ar_name: s.arName.trim(),
+        category: s.category, status: s.status, project: s.project, custodian: isBulk ? "" : s.custodian,
+        location: s.location.trim(), ar_location: "",
+        make: s.make.trim(), model: s.model.trim(), tracking: s.tracking,
+        quantity: isBulk ? (Number(s.quantity) || 1) : 1, serial: isBulk ? "" : s.serial.trim(),
+        purchaseDate: s.purchaseDate, purchaseValue: Number(s.purchaseValue) || 0, currency: "SAR",
+        schedule: null, documents: [], maintenance: [],
+      },
+    });
+    onClose();
+    if (!isBulk) onOpenAsset(id);
+  };
+
+  return (
+    <div className="modal-mask" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="modal-head">
+          <div className="h">{t.add_asset}</div>
+          <button className="close icon-btn" onClick={onClose} aria-label={t.cancel}><Icon name="x" size={16} /></button>
+        </div>
+        <div className="modal-body">
+          <div className="type-seg">
+            {["unique", "bulk"].map((k) => (
+              <button key={k} type="button" className={`type-opt ${s.tracking === k ? "active" : ""}`} onClick={() => set("tracking", k)}>
+                {k === "unique" ? t.track_unique : t.track_bulk}
+              </button>
+            ))}
+          </div>
+          <div className="qf-row">
+            <label className="qf-cell"><span className="qf-label">{t.asset_name_ar}</span><input className="qf" dir="auto" value={s.arName} onChange={(e) => set("arName", e.target.value)} autoFocus /></label>
+            <label className="qf-cell"><span className="qf-label">{t.asset_name_en}</span><input className="qf" dir="auto" value={s.name} onChange={(e) => set("name", e.target.value)} /></label>
+          </div>
+          <div className="qf-row">
+            <label className="qf-cell"><span className="qf-label">{t.make}</span><input className="qf" dir="auto" value={s.make} onChange={(e) => set("make", e.target.value)} placeholder="Lenovo / Toyota…" /></label>
+            <label className="qf-cell"><span className="qf-label">{t.model}</span><input className="qf" dir="auto" value={s.model} onChange={(e) => set("model", e.target.value)} placeholder='ThinkPad / 75"…' /></label>
+          </div>
+          <div className="qf-row">
+            <label className="qf-cell"><span className="qf-label">{t.category}</span>
+              <select className="qf" value={s.category} onChange={(e) => set("category", e.target.value)}>{Object.keys(A.ASSET_CATEGORY_META).map((k) => <option key={k} value={k}>{A.assetCategoryLabel(k, lang)}</option>)}</select>
+            </label>
+            <label className="qf-cell"><span className="qf-label">{t.location}</span><input className="qf" dir="auto" value={s.location} onChange={(e) => set("location", e.target.value)} /></label>
+          </div>
+          <div className="qf-row">
+            <label className="qf-cell"><span className="qf-label">{t.project}</span>
+              <select className="qf" value={s.project} onChange={(e) => set("project", e.target.value)}>{D.getProjects().map((p) => <option key={p.id} value={p.id}>{D.projectName(p, lang)}</option>)}</select>
+            </label>
+            {isBulk ? (
+              <label className="qf-cell"><span className="qf-label">{t.quantity}</span><input className="qf" type="number" inputMode="numeric" dir="ltr" min="1" value={s.quantity} onChange={(e) => set("quantity", e.target.value)} /></label>
+            ) : (
+              <label className="qf-cell"><span className="qf-label">{t.custodian}</span>
+                <select className="qf" value={s.custodian} onChange={(e) => set("custodian", e.target.value)}>
+                  <option value="">—</option>
+                  {D.getUsers().map((u) => <option key={u.id} value={u.id}>{D.userName(u, lang)}</option>)}
+                </select>
+              </label>
+            )}
+          </div>
+          {!isBulk && (
+            <div className="qf-row">
+              <label className="qf-cell"><span className="qf-label">{t.tag} (QR)</span><input className="qf" dir="ltr" value={s.tag} onChange={(e) => set("tag", e.target.value)} /></label>
+              <label className="qf-cell"><span className="qf-label">{t.serial_number}</span><input className="qf" dir="ltr" value={s.serial} onChange={(e) => set("serial", e.target.value)} /></label>
             </div>
-          );
-        })}
-        {rows.length === 0 && <div className="empty">{t.no_assets}</div>}
+          )}
+          <div className="qf-row">
+            <label className="qf-cell"><span className="qf-label">{t.purchase_value} (SAR)</span><input className="qf" type="number" inputMode="decimal" dir="ltr" value={s.purchaseValue} onChange={(e) => set("purchaseValue", e.target.value)} /></label>
+            <label className="qf-cell"><span className="qf-label">{t.purchase_date}</span><input className="qf" type="date" value={s.purchaseDate} onChange={(e) => set("purchaseDate", e.target.value)} /></label>
+          </div>
+        </div>
+        <div className="modal-foot" style={{ justifyContent: "flex-end" }}>
+          <button className="btn btn-ghost" onClick={onClose}>{t.cancel}</button>
+          <button className="btn btn-primary" onClick={save}><Icon name="check" size={13} /> {t.add_asset}</button>
+        </div>
       </div>
     </div>
   );

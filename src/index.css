@@ -1137,8 +1137,10 @@ select.qf {
 .modal-head .key { font-family: var(--font-mono); font-size: 11px; color: var(--ink-400); }
 .modal-head .close { margin-inline-start: auto; color: var(--ink-400); }
 .modal-body {
-  padding: 6px 20px 14px;
-  display: flex; flex-direction: column; gap: 12px;
+  padding: 10px 20px 16px;
+  display: flex; flex-direction: column; gap: 14px;
+  flex: 1 1 auto; min-height: 0;           /* allow it to shrink + scroll */
+  overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
 }
 .modal-body .title-input {
   border: 0;
