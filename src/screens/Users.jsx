@@ -18,6 +18,8 @@ export default function Users() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: "", username: "", role: "member", password: "" });
+  const [editId, setEditId] = useState(null);
+  const [edit, setEdit] = useState({ name: "", username: "" });
   const [err, setErr] = useState("");
 
   const load = async () => {
@@ -45,6 +47,16 @@ export default function Users() {
       notify(t.toast_created);
       setForm({ name: "", username: "", role: "member", password: "" });
       setCreating(false);
+      load();
+    }
+  };
+
+  const startEdit = (u) => { setErr(""); setEditId(u.id); setEdit({ name: u.name || "", username: u.username || "" }); };
+  const saveEdit = async (id) => {
+    if (!edit.name.trim()) return;
+    if (await call({ action: "update_profile", id, name: edit.name.trim(), username: edit.username.trim() })) {
+      notify(t.toast_logged);
+      setEditId(null);
       load();
     }
   };
@@ -96,7 +108,17 @@ export default function Users() {
           <span>{lang === "ar" ? "الاسم" : "Name"}</span><span>{lang === "ar" ? "المستخدم" : "Username"}</span><span>{lang === "ar" ? "الدور" : "Role"}</span><span></span>
         </div>
         {loading && <div className="empty">…</div>}
-        {!loading && rows.map((u) => (
+        {!loading && rows.map((u) => editId === u.id ? (
+          <div className="list-row" key={u.id} style={{ gridTemplateColumns: "1fr 140px 140px 1fr", cursor: "default" }}>
+            <div><input className="qf" dir="auto" value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} autoFocus style={{ padding: "4px 8px" }} /></div>
+            <div><input className="qf" autoCapitalize="none" value={edit.username} onChange={(e) => setEdit({ ...edit, username: e.target.value })} style={{ padding: "4px 8px" }} /></div>
+            <div className="muted" style={{ fontSize: 11, alignSelf: "center" }}>{lang === "ar" ? "تغيير الاسم يغيّر تسجيل الدخول" : "Changing username changes their login"}</div>
+            <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+              <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => setEditId(null)}>{t.cancel}</button>
+              <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={() => saveEdit(u.id)}><Icon name="check" size={12} /> {t.save}</button>
+            </div>
+          </div>
+        ) : (
           <div className="list-row" key={u.id} style={{ gridTemplateColumns: "1fr 140px 140px 1fr", cursor: "default" }}>
             <div className="ttl" style={{ opacity: u.active ? 1 : 0.5 }}>{u.name}{!u.active && <span className="muted" style={{ fontSize: 11 }}> · {lang === "ar" ? "معطّل" : "inactive"}</span>}</div>
             <div className="mono" style={{ fontSize: 12.5, color: "var(--ink-500)" }}>{u.username}</div>
@@ -105,7 +127,8 @@ export default function Users() {
                 {ROLES.map((r) => <option key={r} value={r}>{roleLabel(r)}</option>)}
               </select>
             </div>
-            <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+            <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
+              <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => startEdit(u)}><Icon name="edit" size={12} /> {lang === "ar" ? "تعديل" : "Edit"}</button>
               <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => resetPw(u.id)}>{lang === "ar" ? "كلمة المرور" : "Reset password"}</button>
               <button className="btn btn-secondary" style={{ fontSize: 12 }} onClick={() => setActive(u.id, !u.active)}>{u.active ? (lang === "ar" ? "تعطيل" : "Deactivate") : (lang === "ar" ? "تفعيل" : "Activate")}</button>
             </div>

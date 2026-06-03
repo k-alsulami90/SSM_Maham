@@ -16,17 +16,27 @@ export default function CommandPalette({ onClose, onOpenTask, onNav, onCreate })
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   const navTargets = useMemo(() => {
-    const base = [
-      { id: "dashboard", label: role === "manager" ? t.dashboard : t.my_tasks, icon: "dashboard" },
+    // Members get a task-only set; fleet/assets/team are manager areas.
+    if (role !== "manager") {
+      return [
+        { id: "dashboard", label: t.my_tasks, icon: "dashboard" },
+        { id: "hub", label: t.task_hub, icon: "hub" },
+        { id: "inbox", label: t.inbox, icon: "inbox" },
+        { id: "recurring", label: t.recurring_duties, icon: "repeat" },
+        { id: "activity", label: t.activity, icon: "activity" },
+      ];
+    }
+    return [
+      { id: "dashboard", label: t.dashboard, icon: "dashboard" },
       { id: "hub", label: t.task_hub, icon: "hub" },
+      { id: "approvals", label: t.approvals, icon: "approve" },
+      { id: "assets", label: t.assets_dashboard, icon: "gauge" },
+      { id: "team", label: t.team, icon: "team" },
       { id: "recurring", label: t.recurring_duties, icon: "repeat" },
       { id: "register", label: t.asset_register, icon: "box" },
       { id: "vehicles", label: t.vehicles, icon: "car" },
       { id: "activity", label: t.activity, icon: "activity" },
     ];
-    if (role === "manager") base.splice(2, 0, { id: "approvals", label: t.approvals, icon: "approve" }, { id: "assets", label: t.assets_dashboard, icon: "gauge" }, { id: "team", label: t.team, icon: "team" });
-    else base.splice(2, 0, { id: "inbox", label: t.inbox, icon: "inbox" });
-    return base;
   }, [role, t]);
 
   const query = q.trim().toLowerCase();
@@ -49,9 +59,9 @@ export default function CommandPalette({ onClose, onOpenTask, onNav, onCreate })
     taskResults.forEach((tk) => list.push({ kind: "task", id: tk.id }));
     peopleResults.forEach((u) => list.push({ kind: "person", id: u.id }));
     navResults.forEach((n) => list.push({ kind: "nav", id: n.id }));
-    list.push({ kind: "action", id: "create" });
+    if (role === "manager") list.push({ kind: "action", id: "create" });
     return list;
-  }, [taskResults, peopleResults, navResults]);
+  }, [taskResults, peopleResults, navResults, role]);
 
   useEffect(() => { setActive(0); }, [q]);
 
@@ -135,12 +145,16 @@ export default function CommandPalette({ onClose, onOpenTask, onNav, onCreate })
             </>
           )}
 
-          <div className="cmdk-group-label">{t.quick_actions}</div>
-          <Item item={{ kind: "action", id: "create" }}>
-            <Icon name="plus" size={15} className="ic" />
-            <span>{t.create_task}</span>
-            <span className="sub">c</span>
-          </Item>
+          {role === "manager" && (
+            <>
+              <div className="cmdk-group-label">{t.quick_actions}</div>
+              <Item item={{ kind: "action", id: "create" }}>
+                <Icon name="plus" size={15} className="ic" />
+                <span>{t.create_task}</span>
+                <span className="sub">c</span>
+              </Item>
+            </>
+          )}
         </div>
       </div>
     </div>

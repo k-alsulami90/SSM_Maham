@@ -60,43 +60,41 @@ export default function Sidebar({ active, onNav, onOpenProject, onAddProject, co
         ))}
       </div>
 
-      <div className="side-section">
-        <div className="label">{t.assets}</div>
-        {(role === "manager"
-          ? [
-              { id: "assets", label: t.assets_dashboard, icon: "gauge" },
-              { id: "register", label: t.asset_register, icon: "box" },
-              { id: "vehicles", label: t.vehicles, icon: "car" },
-              { id: "fleet", label: t.fleet_dashboard, icon: "car" },
-            ]
-          : [
-              { id: "register", label: t.assets, icon: "box" },
-              { id: "vehicles", label: t.vehicles, icon: "car" },
-            ]
-        ).map((it) => (
-          <button key={it.id} onClick={() => onNav(it.id)} className={`nav-item ${active === it.id ? "active" : ""}`}>
-            <Icon name={it.icon} className="icon" />
-            <span>{it.label}</span>
-          </button>
-        ))}
-      </div>
+      {/* Fleet / assets / projects are operational areas — managers & admins only.
+          Members get a focused task-only sidebar. */}
+      {role === "manager" && (
+        <div className="side-section">
+          <div className="label">{t.assets}</div>
+          {[
+            { id: "assets", label: t.assets_dashboard, icon: "gauge" },
+            { id: "register", label: t.asset_register, icon: "box" },
+            { id: "vehicles", label: t.vehicles, icon: "car" },
+            { id: "fleet", label: t.fleet_dashboard, icon: "car" },
+          ].map((it) => (
+            <button key={it.id} onClick={() => onNav(it.id)} className={`nav-item ${active === it.id ? "active" : ""}`}>
+              <Icon name={it.icon} className="icon" />
+              <span>{it.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
-      <div className="side-section">
-        <div className="label" style={{ display: "flex", alignItems: "center" }}>
-          <span>{t.projects}</span>
-          {role === "manager" && (
+      {role === "manager" && (
+        <div className="side-section">
+          <div className="label" style={{ display: "flex", alignItems: "center" }}>
+            <span>{t.projects}</span>
             <button onClick={onAddProject} title={t.new_project} aria-label={t.new_project} style={{ marginInlineStart: "auto", color: "var(--ink-400)", display: "grid", placeItems: "center", width: 18, height: 18, borderRadius: 4 }}>
               <Icon name="plus" size={13} />
             </button>
-          )}
+          </div>
+          {D.getProjects().map((p) => (
+            <button key={p.id} className="nav-item" onClick={() => onOpenProject(p.id)}>
+              <span className="icon" style={{ width: 10, height: 10, borderRadius: 3, background: D.projectDot(p.id) }} />
+              <span style={{ fontSize: 13 }}>{D.projectName(p, lang)}</span>
+            </button>
+          ))}
         </div>
-        {D.getProjects().map((p) => (
-          <button key={p.id} className="nav-item" onClick={() => onOpenProject(p.id)}>
-            <span className="icon" style={{ width: 10, height: 10, borderRadius: 3, background: D.projectDot(p.id) }} />
-            <span style={{ fontSize: 13 }}>{D.projectName(p, lang)}</span>
-          </button>
-        ))}
-      </div>
+      )}
 
       <div style={{ marginTop: "auto", position: "relative" }}>
         {menu && (

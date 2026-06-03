@@ -12,25 +12,11 @@ import { AssetsDashboard, AssetRegister, AssetView } from "./screens/Assets.jsx"
 import ProjectView from "./screens/ProjectView.jsx";
 import Users from "./screens/Users.jsx";
 import { useAuth } from "./auth/AuthProvider.jsx";
-import MobileApp from "./mobile/MobileApp.jsx";
 import CommandPalette from "./components/CommandPalette.jsx";
 import Icon from "./components/Icon.jsx";
 import { I18N, ACCENTS } from "./data/i18n.js";
 import { findProject, projectName } from "./data/mock.js";
 import { useStore } from "./store/AppStore.jsx";
-
-const MOBILE_QUERY = "(max-width: 760px)";
-
-function useIsMobile() {
-  const [m, setM] = useState(() => (typeof window !== "undefined" ? window.matchMedia(MOBILE_QUERY).matches : false));
-  useEffect(() => {
-    const mq = window.matchMedia(MOBILE_QUERY);
-    const on = (e) => setM(e.matches);
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
-  return m;
-}
 
 /* PWA install prompt capture. */
 function useInstallPrompt() {
@@ -58,7 +44,6 @@ export default function App() {
   const { lang, accent, theme, role, currentUserId } = settings;
   const t = I18N[lang];
   const auth = useAuth();
-  const isMobile = useIsMobile();
 
   // When real auth is active, the signed-in profile drives the role
   // (admin & manager → full UI; member → restricted). Local mode is unaffected.
@@ -131,18 +116,18 @@ export default function App() {
         return;
       }
       if (typing || paletteOpen || showModal) return;
-      if (e.key === "c") { e.preventDefault(); setShowModal(true); }
+      if (e.key === "c" && role === "manager") { e.preventDefault(); setShowModal(true); }
       else if (e.key === "/") { e.preventDefault(); setPaletteOpen(true); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [paletteOpen, showModal]);
+  }, [paletteOpen, showModal, role]);
 
   // Keep selected screen valid when the role changes.
   useEffect(() => {
     const allowed = role === "manager"
       ? ["dashboard", "hub", "approvals", "recurring", "team", "activity", "fleet", "vehicles", "assets", "register", "project"]
-      : ["dashboard", "hub", "recurring", "inbox", "activity", "vehicles", "register", "project"];
+      : ["dashboard", "hub", "recurring", "inbox", "activity"];
     if (auth.role === "admin") allowed.push("users");
     if (!allowed.includes(screen)) setScreen("dashboard");
   }, [role, screen, auth.role]);
@@ -303,18 +288,6 @@ export default function App() {
   const banner = offline && (
     <div className="offline-banner"><Icon name="bell" size={13} /> {t.offline_banner}</div>
   );
-
-  if (isMobile) {
-    return (
-      <>
-        {banner}
-        <MobileApp onOpen={setOpenId} onCreate={() => setShowModal(true)} />
-        {drawer}
-        {modal}
-        {palette}
-      </>
-    );
-  }
 
   return (
     <div className={`app-shell ${navOpen ? "nav-open" : ""}`}>

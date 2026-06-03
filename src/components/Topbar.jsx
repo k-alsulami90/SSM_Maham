@@ -29,8 +29,8 @@ export default function Topbar({ crumbs, onNew, onMenu, onSearch, onOpenTask, ca
 
       <div className="crumb">
         {crumbs.map((c, i) => (
-          <span key={i}>
-            {i > 0 && <span style={{ margin: "0 6px", color: "var(--ink-300)" }}>/</span>}
+          <span key={i} className={i === crumbs.length - 1 ? "" : "crumb-prefix"}>
+            {i > 0 && <span className="crumb-prefix" style={{ margin: "0 6px", color: "var(--ink-300)" }}>/</span>}
             {i === crumbs.length - 1 ? <b>{c}</b> : <span>{c}</span>}
           </span>
         ))}
@@ -134,9 +134,11 @@ export default function Topbar({ crumbs, onNew, onMenu, onSearch, onOpenTask, ca
         )}
       </div>
 
-      <button className="btn btn-primary" onClick={onNew}>
-        <Icon name="plus" size={14} /> {t.new_task}
-      </button>
+      {role === "manager" && (
+        <button className="btn btn-primary" onClick={onNew}>
+          <Icon name="plus" size={14} /> {t.new_task}
+        </button>
+      )}
     </div>
   );
 }

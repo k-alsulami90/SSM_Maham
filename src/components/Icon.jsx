@@ -56,6 +56,7 @@ const PATHS = {
   pin: ["M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z", "M12 10a2 2 0 100-4 2 2 0 000 4z"],
   cpu: ["M6 6h12v12H6z", "M9 9h6v6H9z", "M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"],
   box: ["M3 8l9-5 9 5v8l-9 5-9-5z", "M3 8l9 5 9-5", "M12 13v9"],
+  edit: ["M12 20h9", "M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"],
 };
 
 export default function Icon({ name, size = 16, strokeWidth = 1.6, className, style, ...rest }) {

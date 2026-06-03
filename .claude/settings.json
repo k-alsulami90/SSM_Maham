@@ -36,7 +36,8 @@
       "Bash(printf '\\\\n.claude\\\\n')",
       "Bash(git rm *)",
       "Bash(git commit -q -m ' *)",
-      "Bash(git remote *)"
+      "Bash(git remote *)",
+      "Bash(git push *)"
     ]
   }
 }

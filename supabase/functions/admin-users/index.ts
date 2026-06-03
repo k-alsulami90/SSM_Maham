@@ -67,6 +67,30 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    if (action === "update_profile") {
+      const { id, name, username } = body;
+      if (!id) return json({ error: "id required" }, 400);
+      const updates: Record<string, unknown> = {};
+      if (typeof name === "string" && name.trim()) updates.name = name.trim();
+      if (typeof username === "string" && username.trim()) updates.username = username.trim().toLowerCase();
+      if (!Object.keys(updates).length) return json({ error: "nothing to update" }, 400);
+      // A username change is also a login-identity change → update the auth email.
+      if (updates.username) {
+        const meta: Record<string, unknown> = { username: updates.username };
+        if (updates.name) meta.name = updates.name;
+        const { error: aErr } = await admin.auth.admin.updateUserById(id, {
+          email: emailFor(updates.username as string),
+          user_metadata: meta,
+        });
+        if (aErr) return json({ error: aErr.message }, 400);
+      } else if (updates.name) {
+        await admin.auth.admin.updateUserById(id, { user_metadata: { name: updates.name } });
+      }
+      const { error } = await admin.from("profiles").update(updates).eq("id", id);
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true });
+    }
+
     if (action === "set_role") {
       const { id, role } = body;
       if (!id || !role) return json({ error: "id, role required" }, 400);
