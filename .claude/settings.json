@@ -37,7 +37,9 @@
       "Bash(git rm *)",
       "Bash(git commit -q -m ' *)",
       "Bash(git remote *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(rm -f src/mobile/MobileApp.jsx)",
+      "Bash(rmdir src/mobile)"
     ]
   }
 }

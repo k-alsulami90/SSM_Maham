@@ -1435,6 +1435,77 @@ a { color: inherit; text-decoration: none; }
   .drawer { width: 100vw; }
 }
 
+/* ============================================================
+   Mobile app chrome — bottom tab bar + native-feel adjustments.
+   Reuses every desktop screen; only the navigation shell changes.
+   ============================================================ */
+.mob-tabbar { display: none; }
+
+.is-mobile .mob-tabbar {
+  position: fixed; inset-inline: 0; bottom: 0; z-index: 60;
+  display: flex; align-items: stretch; gap: 2px;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--line);
+  padding: 4px 6px calc(4px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -3px 16px oklch(0.2 0.02 130 / 0.06);
+}
+.mtab {
+  flex: 1 1 0; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; padding: 7px 2px 5px; min-height: 52px;
+  color: var(--ink-400); background: none; border-radius: 12px;
+  transition: color 120ms ease, background 120ms ease;
+}
+.mtab:active { background: var(--bg-sand); }
+.mtab.active { color: var(--acc-forest); }
+.mtab-ic { position: relative; display: grid; place-items: center; }
+.mtab-lbl { font-size: 10.5px; font-weight: 500; line-height: 1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mtab-badge {
+  position: absolute; top: -6px; inset-inline-end: -9px;
+  min-width: 15px; height: 15px; padding: 0 4px;
+  border-radius: 8px; background: var(--hue-urgent); color: #fff;
+  font-size: 9.5px; font-weight: 700; line-height: 15px; text-align: center;
+}
+.mtab-fab {
+  flex: 0 0 auto; align-self: center;
+  width: 52px; height: 52px; margin: -18px 8px 0; border-radius: 17px;
+  background: var(--acc-forest); color: #fdf8ec;
+  display: grid; place-items: center;
+  box-shadow: 0 8px 18px oklch(0.45 0.07 150 / 0.45);
+}
+.mtab-fab:active { transform: scale(0.94); }
+
+/* The sidebar doubles as the mobile "More" sheet (slide-in at ≤920 already). */
+.side-close { display: none; }
+.is-mobile .side-close { display: grid; margin-inline-start: auto; }
+
+/* Header behaves like an app top bar; bottom bar owns navigation. */
+.is-mobile .topbar { position: sticky; top: 0; z-index: 50; padding: 10px 14px; }
+.is-mobile .topbar .search { display: none; }
+.is-mobile .crumb .crumb-prefix { display: none; }
+.is-mobile .crumb b { font-size: 17px; }
+.is-mobile .content { padding: 16px 14px calc(92px + env(safe-area-inset-bottom, 0px)); }
+
+/* Filters wrap instead of overflowing; drop desktop-only chrome. */
+.is-mobile .filters { flex-wrap: wrap; gap: 8px; }
+.is-mobile .filters .divider-v { display: none; }
+.is-mobile .filters .tabbar { width: 100%; }
+.is-mobile .filters .tabbar button { flex: 1; justify-content: center; }
+
+/* Page headers stack their actions under the title on a phone. */
+.is-mobile .page-header { flex-wrap: wrap; gap: 10px; }
+.is-mobile .page-header .actions { margin-inline-start: 0; width: 100%; flex-wrap: wrap; }
+
+/* Wide data tables (fleet/assets) scroll horizontally rather than clipping. */
+.is-mobile .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Comfortable touch targets + full-bleed task drawer. */
+.is-mobile .btn { min-height: 40px; }
+.is-mobile .icon-btn { width: 38px; height: 38px; }
+.is-mobile .drawer { width: 100vw; }
+.is-mobile .drawer-body { padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
+.is-mobile .sidebar { width: min(310px, 84vw); overflow-y: auto; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+
 /* ====== Dark theme ====== */
 :root[data-theme="dark"] {
   color-scheme: dark;

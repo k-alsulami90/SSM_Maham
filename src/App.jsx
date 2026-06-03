@@ -13,10 +13,24 @@ import ProjectView from "./screens/ProjectView.jsx";
 import Users from "./screens/Users.jsx";
 import { useAuth } from "./auth/AuthProvider.jsx";
 import CommandPalette from "./components/CommandPalette.jsx";
+import MobileTabBar from "./components/MobileTabBar.jsx";
 import Icon from "./components/Icon.jsx";
 import { I18N, ACCENTS } from "./data/i18n.js";
 import { findProject, projectName } from "./data/mock.js";
 import { useStore } from "./store/AppStore.jsx";
+
+const MOBILE_QUERY = "(max-width: 760px)";
+
+function useIsMobile() {
+  const [m, setM] = useState(() => (typeof window !== "undefined" ? window.matchMedia(MOBILE_QUERY).matches : false));
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_QUERY);
+    const on = (e) => setM(e.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return m;
+}
 
 /* PWA install prompt capture. */
 function useInstallPrompt() {
@@ -44,6 +58,7 @@ export default function App() {
   const { lang, accent, theme, role, currentUserId } = settings;
   const t = I18N[lang];
   const auth = useAuth();
+  const isMobile = useIsMobile();
 
   // When real auth is active, the signed-in profile drives the role
   // (admin & manager → full UI; member → restricted). Local mode is unaffected.
@@ -290,13 +305,14 @@ export default function App() {
   );
 
   return (
-    <div className={`app-shell ${navOpen ? "nav-open" : ""}`}>
+    <div className={`app-shell ${isMobile ? "is-mobile" : ""} ${navOpen ? "nav-open" : ""}`}>
       {navOpen && <div className="nav-scrim" onClick={() => setNavOpen(false)} />}
-      <Sidebar active={screen} onNav={nav} onOpenProject={openProject} onAddProject={addProject} counts={counts} />
+      <Sidebar active={screen} onNav={nav} onOpenProject={openProject} onAddProject={addProject} counts={counts} onClose={() => setNavOpen(false)} />
       <div className="main">
         {banner}
         <Topbar
           crumbs={crumbs}
+          isMobile={isMobile}
           onNew={() => setShowModal(true)}
           onMenu={() => setNavOpen(true)}
           onSearch={() => setPaletteOpen(true)}
@@ -306,6 +322,16 @@ export default function App() {
         />
         {renderScreen()}
       </div>
+      {isMobile && (
+        <MobileTabBar
+          active={screen}
+          moreOpen={navOpen}
+          onNav={nav}
+          onMore={() => setNavOpen(true)}
+          onCreate={() => setShowModal(true)}
+          counts={counts}
+        />
+      )}
       {drawer}
       {modal}
       {palette}

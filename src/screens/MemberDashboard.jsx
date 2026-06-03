@@ -30,11 +30,6 @@ export default function MemberDashboard({ onOpen, openId, onCreate, onNav }) {
               : `${inProg.length + backlog.length} active, ${inReview.length} in review`}
           </p>
         </div>
-        <div className="actions">
-          <button className="btn btn-primary" onClick={onCreate}>
-            <Icon name="plus" size={13} /> {t.suggest_task}
-          </button>
-        </div>
       </div>
 
       <div className="metric-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>

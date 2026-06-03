@@ -5,7 +5,7 @@ import { useStore } from "../store/AppStore.jsx";
 import * as D from "../data/mock.js";
 
 /* Top bar — breadcrumbs, search, notifications, settings, install, new task. */
-export default function Topbar({ crumbs, onNew, onMenu, onSearch, onOpenTask, canInstall, onInstall }) {
+export default function Topbar({ crumbs, isMobile, onNew, onMenu, onSearch, onOpenTask, canInstall, onInstall }) {
   const { settings, tasks, dispatch } = useStore();
   const { lang, accent, theme, uiSize, role, currentUserId } = settings;
   const t = I18N[lang];
@@ -23,9 +23,11 @@ export default function Topbar({ crumbs, onNew, onMenu, onSearch, onOpenTask, ca
 
   return (
     <div className="topbar">
-      <button className="icon-btn menu-btn" onClick={onMenu} aria-label="Menu">
-        <Icon name="list" size={18} />
-      </button>
+      {!isMobile && (
+        <button className="icon-btn menu-btn" onClick={onMenu} aria-label="Menu">
+          <Icon name="list" size={18} />
+        </button>
+      )}
 
       <div className="crumb">
         {crumbs.map((c, i) => (
@@ -134,7 +136,7 @@ export default function Topbar({ crumbs, onNew, onMenu, onSearch, onOpenTask, ca
         )}
       </div>
 
-      {role === "manager" && (
+      {role === "manager" && !isMobile && (
         <button className="btn btn-primary" onClick={onNew}>
           <Icon name="plus" size={14} /> {t.new_task}
         </button>

@@ -8,7 +8,7 @@ import { useAuth } from "../auth/AuthProvider.jsx";
 
 /* Left navigation. Items adapt to the signed-in role (RBAC). The user card
    opens a popover to switch roles (mock auth) and reset demo data. */
-export default function Sidebar({ active, onNav, onOpenProject, onAddProject, counts }) {
+export default function Sidebar({ active, onNav, onOpenProject, onAddProject, counts, onClose }) {
   const { settings, dispatch } = useStore();
   const { lang, role, currentUserId } = settings;
   const t = I18N[lang];
@@ -43,6 +43,9 @@ export default function Sidebar({ active, onNav, onOpenProject, onAddProject, co
           {t.appName}
           <span className="sub">{t.tagline}</span>
         </div>
+        <button className="side-close icon-btn" onClick={onClose} aria-label={lang === "ar" ? "إغلاق" : "Close"}>
+          <Icon name="x" size={18} />
+        </button>
       </div>
 
       <div className="side-section">
