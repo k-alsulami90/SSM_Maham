@@ -11,6 +11,8 @@ import { FleetDashboard, Vehicles } from "./screens/Fleet.jsx";
 import { AssetsDashboard, AssetRegister, AssetView } from "./screens/Assets.jsx";
 import ProjectView from "./screens/ProjectView.jsx";
 import Users from "./screens/Users.jsx";
+import Suppliers from "./screens/Suppliers.jsx";
+import Maintenance from "./screens/Maintenance.jsx";
 import { useAuth } from "./auth/AuthProvider.jsx";
 import CommandPalette from "./components/CommandPalette.jsx";
 import MobileTabBar from "./components/MobileTabBar.jsx";
@@ -144,7 +146,7 @@ export default function App() {
   // Keep selected screen valid when the role changes.
   useEffect(() => {
     const allowed = role === "manager"
-      ? ["dashboard", "hub", "approvals", "recurring", "team", "activity", "fleet", "vehicles", "assets", "register", "project"]
+      ? ["dashboard", "hub", "approvals", "recurring", "team", "activity", "fleet", "vehicles", "assets", "register", "project", "suppliers", "maintenance"]
       : ["dashboard", "hub", "recurring", "inbox", "activity"];
     if (auth.role === "admin") allowed.push("users");
     if (!allowed.includes(screen)) setScreen("dashboard");
@@ -251,6 +253,8 @@ export default function App() {
     vehicles: [t.assets, t.vehicles],
     assets: [t.assets, t.assets_dashboard],
     register: [t.assets, t.asset_register],
+    maintenance: [t.assets, t.maintenance],
+    suppliers: [t.assets, t.suppliers],
     users: [t.settings, lang === "ar" ? "المستخدمون" : "Users"],
   };
   const crumbs =
@@ -285,6 +289,10 @@ export default function App() {
           : <AssetRegister onOpenVehicle={openVehicle} onOpenAsset={openAsset} onNav={nav} />;
       case "project":
         return <ProjectView projectId={openProjectId} onOpenTask={setOpenId} onOpenVehicle={openVehicle} onOpenAsset={openAsset} onBack={() => nav("dashboard")} />;
+      case "suppliers":
+        return <Suppliers />;
+      case "maintenance":
+        return <Maintenance />;
       case "users":
         return <Users />;
       case "dashboard":

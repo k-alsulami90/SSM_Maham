@@ -73,6 +73,8 @@ export default function Sidebar({ active, onNav, onOpenProject, onAddProject, co
             { id: "register", label: t.asset_register, icon: "box" },
             { id: "vehicles", label: t.vehicles, icon: "car" },
             { id: "fleet", label: t.fleet_dashboard, icon: "car" },
+            { id: "maintenance", label: t.maintenance, icon: "wrench" },
+            { id: "suppliers", label: t.suppliers, icon: "team" },
           ].map((it) => (
             <button key={it.id} onClick={() => onNav(it.id)} className={`nav-item ${active === it.id ? "active" : ""}`}>
               <Icon name={it.icon} className="icon" />

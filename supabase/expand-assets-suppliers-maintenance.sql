@@ -130,6 +130,17 @@ alter table public.assets add column if not exists useful_life_years    int;
 alter table public.assets add column if not exists next_maintenance_date date;
 create unique index if not exists uq_assets_tag on public.assets(asset_tag) where asset_tag is not null;
 
+-- Grouped / bulk tracking: 'unique' = one serialized item per row,
+-- 'bulk' = a counted quantity of identical non-serialized items (desks, mice…).
+-- make/model give structured grouping (Category → Make → Model) for the
+-- aggregated register view ("25 Lenovo laptops in Head Office").
+do $$ begin create type public.asset_tracking as enum ('unique','bulk'); exception when duplicate_object then null; end $$;
+alter table public.assets add column if not exists tracking public.asset_tracking not null default 'unique';
+alter table public.assets add column if not exists quantity int not null default 1;
+alter table public.assets add column if not exists make  text;   -- brand, e.g. Lenovo
+alter table public.assets add column if not exists model text;   -- e.g. ThinkPad / 75"
+create index if not exists idx_assets_group on public.assets(category, make, model);
+
 -- ============================================================
 --  RLS — staff full access; members none.
 -- ============================================================

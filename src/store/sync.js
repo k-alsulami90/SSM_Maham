@@ -38,26 +38,84 @@ const rowToTpl = (r) => ({ id: r.id, ...(r.data || {}) });
 const projToRow = (p) => ({ id: p.id, name: p.name, ar: p.ar });
 const rowToProj = (r) => ({ id: r.id, name: r.name, ar: r.ar });
 
-export const TO_ROW = { tasks: taskToRow, vehicles: vehToRow, assets: assetToRow, recurring_templates: tplToRow, projects: projToRow };
+// Suppliers — rating_score/eval_count are maintained by a DB trigger, so we
+// never write them back (would clobber the computed value).
+const supplierToRow = (s) => ({
+  id: s.id, name: s.name, category: s.category || null,
+  tax_number: s.taxNumber || null, cr_number: s.crNumber || null,
+  contact_name: s.contactName || null, phone: s.phone || null, email: s.email || null,
+  payment_terms: s.paymentTerms || null, iban: s.iban || null, contract_url: s.contractUrl || null,
+  active: s.active !== false, data: s.data || {},
+});
+const rowToSupplier = (r) => ({
+  id: r.id, name: r.name, category: r.category || "",
+  taxNumber: r.tax_number || "", crNumber: r.cr_number || "",
+  contactName: r.contact_name || "", phone: r.phone || "", email: r.email || "",
+  paymentTerms: r.payment_terms || "", iban: r.iban || "", contractUrl: r.contract_url || "",
+  ratingScore: Number(r.rating_score) || 0, evalCount: r.eval_count || 0, active: r.active !== false,
+  ...(r.data || {}),
+});
+
+const maintToRow = (m) => {
+  const { id, targetType, targetId, targetLabel, maintenanceType, logDate, scheduledDate, description,
+    technicianId, supplierId, cost, partsReplaced, meterReading, status, createdBy, ...rest } = m;
+  return {
+    id, target_type: targetType || "asset", target_id: targetId || null, target_label: targetLabel || null,
+    maintenance_type: maintenanceType || "corrective", log_date: logDate || null, scheduled_date: scheduledDate || null,
+    description: description || null, technician_id: uuidOrNull(technicianId), supplier_id: uuidOrNull(supplierId),
+    cost: cost || 0, parts_replaced: partsReplaced || [], meter_reading: meterReading ?? null,
+    status: status || "scheduled", created_by: uuidOrNull(createdBy), data: rest,
+  };
+};
+const rowToMaint = (r) => ({
+  id: r.id, targetType: r.target_type, targetId: r.target_id || "", targetLabel: r.target_label || "",
+  maintenanceType: r.maintenance_type, logDate: r.log_date, scheduledDate: r.scheduled_date,
+  description: r.description || "", technicianId: r.technician_id || "", supplierId: r.supplier_id || "",
+  cost: Number(r.cost) || 0, partsReplaced: r.parts_replaced || [], meterReading: r.meter_reading,
+  status: r.status, createdBy: r.created_by || "", ...(r.data || {}),
+});
+
+const evalToRow = (e) => ({
+  id: e.id, supplier_id: e.supplierId, maintenance_id: uuidOrNull(e.maintenanceId),
+  quality: e.quality, timeliness: e.timeliness, cost: e.cost, service: e.service,
+  weighted_score: e.weightedScore, note: e.note || null, created_by: uuidOrNull(e.createdBy),
+});
+const rowToEval = (r) => ({
+  id: r.id, supplierId: r.supplier_id, maintenanceId: r.maintenance_id || "",
+  quality: r.quality, timeliness: r.timeliness, cost: r.cost, service: r.service,
+  weightedScore: Number(r.weighted_score) || 0, note: r.note || "", createdBy: r.created_by || "",
+});
+
+export const TO_ROW = {
+  tasks: taskToRow, vehicles: vehToRow, assets: assetToRow, recurring_templates: tplToRow, projects: projToRow,
+  suppliers: supplierToRow, maintenance_logs: maintToRow, supplier_evaluations: evalToRow,
+};
 
 // ----- read everything -----
 export async function hydrateAll() {
   try {
-    const [tasks, vehicles, assets, templates, projects] = await Promise.all([
+    const [tasks, vehicles, assets, templates, projects, suppliers, maintenance, evaluations] = await Promise.all([
       supabase.from("tasks").select("*"),
       supabase.from("vehicles").select("*"),
       supabase.from("assets").select("*"),
       supabase.from("recurring_templates").select("*"),
       supabase.from("projects").select("*"),
+      supabase.from("suppliers").select("*"),
+      supabase.from("maintenance_logs").select("*"),
+      supabase.from("supplier_evaluations").select("*"),
     ]);
     const err = tasks.error || vehicles.error || assets.error || templates.error || projects.error;
     if (err) { console.error("[sync] hydrate error:", err.message); return null; }
+    // suppliers/maintenance are staff-only; members get empty sets (not an error).
     return {
       tasks: (tasks.data || []).map(rowToTask),
       vehicles: (vehicles.data || []).map(rowToVeh),
       assets: (assets.data || []).map(rowToAsset),
       templates: (templates.data || []).map(rowToTpl),
       projects: (projects.data || []).map(rowToProj),
+      suppliers: (suppliers.data || []).map(rowToSupplier),
+      maintenance: (maintenance.data || []).map(rowToMaint),
+      evaluations: (evaluations.data || []).map(rowToEval),
     };
   } catch (e) {
     console.error("[sync] hydrate failed:", e);
@@ -103,7 +161,7 @@ export async function pushCollection(table, cur, prev, toRow) {
 // ----- realtime: any change on shared tables → onChange -----
 export function subscribeAll(onChange) {
   const ch = supabase.channel("maham-sync");
-  ["tasks", "vehicles", "assets", "recurring_templates", "projects"].forEach((tb) => {
+  ["tasks", "vehicles", "assets", "recurring_templates", "projects", "suppliers", "maintenance_logs", "supplier_evaluations"].forEach((tb) => {
     ch.on("postgres_changes", { event: "*", schema: "public", table: tb }, onChange);
   });
   ch.subscribe();

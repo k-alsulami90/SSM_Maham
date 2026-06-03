@@ -31,6 +31,9 @@ const TEMPLATES_KEY = "maham.templates.v2";
 const VEHICLES_KEY = "maham.vehicles.v3";
 const ASSETS_KEY = "maham.assets.v3";
 const PROJECTS_KEY = "maham.projects.v1";
+const SUPPLIERS_KEY = "maham.suppliers.v1";
+const MAINT_KEY = "maham.maintenance.v1";
+const EVALS_KEY = "maham.evaluations.v1";
 const SETTINGS_KEY = "maham.settings.v1";
 
 const DEFAULT_SETTINGS = {
@@ -108,7 +111,10 @@ export function init() {
   tasks = ensureAssetTasks(tasks, assets);
   const projects = load(PROJECTS_KEY, getProjects());
   setProjects(projects);
-  return { tasks, templates, vehicles, assets, projects, settings, users: getUsers() };
+  const suppliers = load(SUPPLIERS_KEY, []);
+  const maintenance = load(MAINT_KEY, []);
+  const evaluations = load(EVALS_KEY, []);
+  return { tasks, templates, vehicles, assets, projects, suppliers, maintenance, evaluations, settings, users: getUsers() };
 }
 
 const mapTask = (state, id, fn) => ({
@@ -140,6 +146,9 @@ export function reducer(state, action) {
         assets: d.assets ?? state.assets,
         templates: d.templates ?? state.templates,
         projects: d.projects ?? state.projects,
+        suppliers: d.suppliers ?? state.suppliers,
+        maintenance: d.maintenance ?? state.maintenance,
+        evaluations: d.evaluations ?? state.evaluations,
       };
     }
 
@@ -262,6 +271,38 @@ export function reducer(state, action) {
 
     case "DELETE_PROJECT":
       return { ...state, projects: state.projects.filter((p) => p.id !== action.id) };
+
+    // ===== Suppliers =====
+    case "ADD_SUPPLIER":
+      return { ...state, suppliers: [...state.suppliers, action.supplier] };
+    case "UPDATE_SUPPLIER":
+      return { ...state, suppliers: state.suppliers.map((s) => (s.id === action.id ? { ...s, ...action.patch } : s)) };
+    case "DELETE_SUPPLIER":
+      return { ...state, suppliers: state.suppliers.filter((s) => s.id !== action.id) };
+
+    // ===== Maintenance logs (centralized hub — distinct from the fleet
+    //  vehicle-service ADD_MAINTENANCE action below) =====
+    case "ADD_MAINT_LOG":
+      return { ...state, maintenance: [action.maintenance, ...state.maintenance] };
+    case "UPDATE_MAINT_LOG":
+      return { ...state, maintenance: state.maintenance.map((m) => (m.id === action.id ? { ...m, ...action.patch } : m)) };
+    case "DELETE_MAINT_LOG":
+      return { ...state, maintenance: state.maintenance.filter((m) => m.id !== action.id) };
+
+    // ===== Supplier evaluation — append + recompute that supplier's rating
+    //  locally (DB trigger does the authoritative recompute on sync). =====
+    case "ADD_EVALUATION": {
+      const evaluations = [...state.evaluations, action.evaluation];
+      const sid = action.evaluation.supplierId;
+      const mine = evaluations.filter((e) => e.supplierId === sid);
+      const avg = mine.reduce((s, e) => s + (Number(e.weightedScore) || 0), 0) / (mine.length || 1);
+      return {
+        ...state,
+        evaluations,
+        suppliers: state.suppliers.map((s) =>
+          s.id === sid ? { ...s, ratingScore: Math.round(avg * 100) / 100, evalCount: mine.length } : s),
+      };
+    }
 
     // ===== Fleet =====
     case "ADD_FUEL":
@@ -443,14 +484,14 @@ export function AppStoreProvider({ children }) {
           if (!d.assets.length && state.assets.length) { await pushCollection("assets", state.assets, [], TO_ROW.assets); d.assets = state.assets; }
           if (!d.templates.length && state.templates.length) { await pushCollection("recurring_templates", state.templates, [], TO_ROW.recurring_templates); d.templates = state.templates; }
         }
-        prevRef.current = { tasks: d.tasks, vehicles: d.vehicles, assets: d.assets, templates: d.templates, projects: d.projects };
+        prevRef.current = { tasks: d.tasks, vehicles: d.vehicles, assets: d.assets, templates: d.templates, projects: d.projects, suppliers: d.suppliers, maintenance: d.maintenance, evaluations: d.evaluations };
         dispatch({ type: "HYDRATE", data: d });
       }
       synced.current = true;
       cleanup = subscribeAll(async () => {
         const d2 = await hydrateAll();
         if (d2) {
-          prevRef.current = { tasks: d2.tasks, vehicles: d2.vehicles, assets: d2.assets, templates: d2.templates, projects: d2.projects };
+          prevRef.current = { tasks: d2.tasks, vehicles: d2.vehicles, assets: d2.assets, templates: d2.templates, projects: d2.projects, suppliers: d2.suppliers, maintenance: d2.maintenance, evaluations: d2.evaluations };
           dispatch({ type: "HYDRATE", data: d2 });
         }
       });
@@ -460,16 +501,21 @@ export function AppStoreProvider({ children }) {
   }, [auth.configured, auth.role]);
 
   // Write-through: mirror each collection change to Supabase (after first hydrate).
+  const STATE_KEY = { tasks: "tasks", vehicles: "vehicles", assets: "assets", recurring_templates: "templates", projects: "projects", suppliers: "suppliers", maintenance_logs: "maintenance", supplier_evaluations: "evaluations" };
   const pushable = (coll, table, toRow) => {
     if (!isSupabaseConfigured || !synced.current || !prevRef.current) return;
-    pushCollection(table, coll, prevRef.current[table === "recurring_templates" ? "templates" : table], toRow);
-    prevRef.current[table === "recurring_templates" ? "templates" : table] = coll;
+    const k = STATE_KEY[table];
+    pushCollection(table, coll, prevRef.current[k], toRow);
+    prevRef.current[k] = coll;
   };
   useEffect(() => { pushable(state.tasks, "tasks", TO_ROW.tasks); }, [state.tasks]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { pushable(state.vehicles, "vehicles", TO_ROW.vehicles); }, [state.vehicles]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { pushable(state.assets, "assets", TO_ROW.assets); }, [state.assets]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { pushable(state.templates, "recurring_templates", TO_ROW.recurring_templates); }, [state.templates]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { pushable(state.projects, "projects", TO_ROW.projects); }, [state.projects]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { pushable(state.suppliers, "suppliers", TO_ROW.suppliers); }, [state.suppliers]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { pushable(state.maintenance, "maintenance_logs", TO_ROW.maintenance_logs); }, [state.maintenance]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { pushable(state.evaluations, "supplier_evaluations", TO_ROW.supplier_evaluations); }, [state.evaluations]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     try { localStorage.setItem(TASKS_KEY, JSON.stringify(state.tasks)); } catch { /* quota */ }
@@ -490,6 +536,15 @@ export function AppStoreProvider({ children }) {
   useEffect(() => {
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings)); } catch { /* quota */ }
   }, [state.settings]);
+  useEffect(() => {
+    try { localStorage.setItem(SUPPLIERS_KEY, JSON.stringify(state.suppliers)); } catch { /* quota */ }
+  }, [state.suppliers]);
+  useEffect(() => {
+    try { localStorage.setItem(MAINT_KEY, JSON.stringify(state.maintenance)); } catch { /* quota */ }
+  }, [state.maintenance]);
+  useEffect(() => {
+    try { localStorage.setItem(EVALS_KEY, JSON.stringify(state.evaluations)); } catch { /* quota */ }
+  }, [state.evaluations]);
 
   const value = useMemo(() => ({ ...state, dispatch }), [state]);
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
