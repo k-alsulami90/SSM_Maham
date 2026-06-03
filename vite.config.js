@@ -16,12 +16,12 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["icon.svg", "apple-touch-icon.png"],
       manifest: {
-        name: "Mahām · Task Management",
-        short_name: "Mahām",
+        name: "إدارة الخدمات المساندة",
+        short_name: "الخدمات المساندة",
         description:
-          "Team task operations — manager & member workflows with approvals, a kanban/list hub, and offline support.",
-        lang: "en",
-        dir: "auto",
+          "إدارة الخدمات المساندة — المهام والأصول والصيانة والموردون، مع دعم العمل دون اتصال.",
+        lang: "ar",
+        dir: "rtl",
         start_url: "./",
         scope: "./",
         display: "standalone",
@@ -43,6 +43,11 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
         navigateFallback: "index.html",
+        // Take over immediately on a new deploy so changes aren't stuck behind
+        // the previously cached service worker.
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: ({ url }) =>
