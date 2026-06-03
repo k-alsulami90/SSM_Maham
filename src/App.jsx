@@ -103,10 +103,13 @@ export default function App() {
   }, [theme]);
 
   // Global UI size — scales the whole app (text, spacing, controls) uniformly.
+  // `zoom` is non-standard and breaks viewport height + fixed positioning on
+  // mobile browsers (content ends up half off-screen), so it's desktop-only.
   useEffect(() => {
+    if (isMobile) { document.documentElement.style.zoom = ""; return; }
     const scale = { s: 1, m: 1.12, l: 1.26 }[settings.uiSize] || 1.12;
     document.documentElement.style.zoom = String(scale);
-  }, [settings.uiSize]);
+  }, [settings.uiSize, isMobile]);
 
   // Online/offline awareness.
   useEffect(() => {
@@ -290,7 +293,12 @@ export default function App() {
     }
   };
 
-  const drawer = openId && <DetailDrawer taskId={openId} lang={lang} onClose={() => setOpenId(null)} />;
+  const drawer = openId && (
+    <>
+      {isMobile && <div className="sheet-scrim" onClick={() => setOpenId(null)} />}
+      <DetailDrawer taskId={openId} lang={lang} onClose={() => setOpenId(null)} />
+    </>
+  );
   const modal = showModal && <CreateTaskModal lang={lang} onClose={() => setShowModal(false)} onCreate={handleCreate} />;
   const palette = paletteOpen && (
     <CommandPalette

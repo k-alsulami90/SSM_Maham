@@ -1499,12 +1499,79 @@ a { color: inherit; text-decoration: none; }
 /* Wide data tables (fleet/assets) scroll horizontally rather than clipping. */
 .is-mobile .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-/* Comfortable touch targets + full-bleed task drawer. */
-.is-mobile .btn { min-height: 40px; }
-.is-mobile .icon-btn { width: 38px; height: 38px; }
-.is-mobile .drawer { width: 100vw; }
-.is-mobile .drawer-body { padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
-.is-mobile .sidebar { width: min(310px, 84vw); overflow-y: auto; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+/* ---- App fit & feel (Apple HIG) ---- */
+/* Use the dynamic viewport so the app fills the screen exactly, with no
+   half-off-screen content as the mobile browser bars show/hide. */
+.app-shell.is-mobile { height: 100dvh; }
+.is-mobile .content { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+
+/* Kill the grey tap flash and text selection on controls → native feel. */
+.is-mobile button, .is-mobile a, .is-mobile .nav-item, .is-mobile .mtab {
+  -webkit-tap-highlight-color: transparent; user-select: none;
+}
+/* HIG minimum 44pt touch targets. */
+.is-mobile .btn { min-height: 44px; }
+.is-mobile .icon-btn { width: 42px; height: 42px; }
+.is-mobile .mtab { min-height: 49px; }
+
+/* ---- Task detail as an iOS-style bottom sheet ---- */
+.sheet-scrim {
+  position: fixed; inset: 0; z-index: 88;
+  background: oklch(0.18 0.02 130 / 0.42);
+  animation: sheet-fade 220ms ease both;
+}
+.is-mobile .drawer {
+  position: fixed; inset-inline: 0; bottom: 0; top: auto;
+  width: 100%; height: 92dvh; max-height: 92dvh;
+  border: 0; border-radius: 18px 18px 0 0;
+  box-shadow: 0 -10px 44px oklch(0.18 0.02 130 / 0.30);
+  z-index: 90; padding-top: 10px;
+  animation: sheet-up 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  will-change: transform;
+}
+[dir="rtl"] .is-mobile .drawer { border-right: 0; }
+/* Grabber handle. */
+.is-mobile .drawer::before {
+  content: ""; position: absolute; top: 7px; left: 50%; transform: translateX(-50%);
+  width: 38px; height: 5px; border-radius: 3px; background: var(--line-strong); opacity: 0.7;
+}
+.is-mobile .drawer-head {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--bg-elev); padding-top: 12px;
+}
+.is-mobile .drawer-body {
+  -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
+  padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ---- Create-task modal also slides up as a sheet on phones ---- */
+.is-mobile .modal-mask { place-items: end center; padding: 0; }
+.is-mobile .modal {
+  width: 100%; max-width: 100%; max-height: 92dvh;
+  border: 0; border-radius: 18px 18px 0 0;
+  padding-top: 10px;
+  animation: sheet-up 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.is-mobile .modal::before {
+  content: ""; position: absolute; top: 7px; left: 50%; transform: translateX(-50%);
+  width: 38px; height: 5px; border-radius: 3px; background: var(--line-strong); opacity: 0.7;
+}
+.is-mobile .modal-body { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.is-mobile .modal-foot { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); border-radius: 0; }
+
+/* ---- "More" side menu: smooth, scrollable, safe-area aware ---- */
+.is-mobile .sidebar {
+  width: min(320px, 86vw); overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
+.nav-scrim { animation: sheet-fade 200ms ease both; }
+
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .is-mobile .drawer, .is-mobile .modal, .sheet-scrim, .nav-scrim { animation: none; }
+}
 
 /* ====== Dark theme ====== */
 :root[data-theme="dark"] {
