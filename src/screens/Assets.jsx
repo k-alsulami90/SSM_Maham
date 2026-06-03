@@ -418,7 +418,7 @@ export function AssetView({ assetId, onBack }) {
 }
 
 function AssetProfile({ asset: a, onBack }) {
-  const { settings, dispatch } = useStore();
+  const { settings, dispatch, maintenance } = useStore();
   const { notify } = useToast();
   const { lang, role, currentUserId } = settings;
   const t = I18N[lang];
@@ -503,14 +503,19 @@ function AssetProfile({ asset: a, onBack }) {
       <div className="panel" style={{ marginTop: 18 }}>
         <div className="panel-head"><div><div className="title">{t.maintenance}</div></div></div>
         <div style={{ padding: "6px 0" }}>
-          {[...(a.maintenance || [])].sort((x, y) => new Date(y.date) - new Date(x.date)).map((m) => (
-            <div className="list-row" key={m.id} style={{ gridTemplateColumns: "110px 1fr 90px", cursor: "default" }}>
-              <div className="mono" style={{ fontSize: 12 }}>{m.date}</div>
-              <div className="ttl">{A.assetMaintCatLabel(m.category, lang)}{m.vendor ? <span className="muted" style={{ fontSize: 12 }}> · {m.vendor}</span> : ""}{(lang === "ar" ? m.ar_note : m.note) ? <span className="muted" style={{ fontSize: 12 }}> — {lang === "ar" ? m.ar_note : m.note}</span> : ""}</div>
-              <div className="mono" style={{ fontWeight: 600 }}>{D.fmtMoney(m.cost, m.currency)}</div>
-            </div>
-          ))}
-          {(a.maintenance || []).length === 0 && <div className="empty">{t.none_due}</div>}
+          {(() => {
+            const embedded = (a.maintenance || []).map((m) => ({ key: m.id, date: m.date, label: A.assetMaintCatLabel(m.category, lang), vendor: m.vendor, note: lang === "ar" ? m.ar_note : m.note, cost: m.cost, currency: m.currency }));
+            const fromHub = maintenance.filter((m) => m.targetType === "asset" && m.targetId === a.id).map((m) => ({ key: "log:" + m.id, date: m.logDate || m.scheduledDate, label: m.maintenanceType === "preventive" ? t.type_preventive : t.type_corrective, vendor: "", note: m.description, cost: m.cost, currency: "SAR", pending: m.status !== "completed" }));
+            const all = [...embedded, ...fromHub].sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));
+            if (!all.length) return <div className="empty">{t.none_due}</div>;
+            return all.map((m) => (
+              <div className="list-row" key={m.key} style={{ gridTemplateColumns: "110px 1fr 90px", cursor: "default" }}>
+                <div className="mono" style={{ fontSize: 12 }}>{m.date || "—"}</div>
+                <div className="ttl" dir="auto">{m.label}{m.vendor ? <span className="muted" style={{ fontSize: 12 }}> · {m.vendor}</span> : ""}{m.note ? <span className="muted" style={{ fontSize: 12 }}> — {m.note}</span> : ""}{m.pending ? <span className="tag" style={{ fontSize: 10, marginInlineStart: 6 }}>{t.status_scheduled}</span> : ""}</div>
+                <div className="mono" style={{ fontWeight: 600 }}>{m.cost ? D.fmtMoney(m.cost, m.currency) : "—"}</div>
+              </div>
+            ));
+          })()}
         </div>
       </div>
     </div>

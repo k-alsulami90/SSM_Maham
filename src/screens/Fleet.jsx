@@ -278,7 +278,7 @@ function VehiclesList({ vehicles, settings, onOpen }) {
 
 /* ----- Vehicle profile ----- */
 function VehicleProfile({ vehicle: v, onBack }) {
-  const { settings, dispatch } = useStore();
+  const { settings, dispatch, maintenance } = useStore();
   const { notify } = useToast();
   const { lang, role, currentUserId } = settings;
   const t = I18N[lang];
@@ -384,15 +384,21 @@ function VehicleProfile({ vehicle: v, onBack }) {
       <div className="panel" style={{ marginTop: 18 }}>
         <div className="panel-head"><div><div className="title">{t.maintenance}</div></div></div>
         <div style={{ padding: "6px 0" }}>
-          {[...(v.maintenance || [])].sort((a, b) => new Date(b.date) - new Date(a.date)).map((m) => (
-            <div className="list-row" key={m.id} style={{ gridTemplateColumns: "110px 1fr 110px 90px", cursor: "default" }}>
-              <div className="mono" style={{ fontSize: 12 }}>{m.date}</div>
-              <div className="ttl">{F.maintCatLabel(m.category, lang)}{m.vendor ? <span className="muted" style={{ fontSize: 12 }}> · {m.vendor}</span> : ""}{(lang === "ar" ? m.ar_note : m.note) ? <span className="muted" style={{ fontSize: 12 }}> — {lang === "ar" ? m.ar_note : m.note}</span> : ""}</div>
-              <div className="mono muted" style={{ fontSize: 12 }}>{m.odometer.toLocaleString()} {t.km}</div>
-              <div className="mono" style={{ fontWeight: 600 }}>{D.fmtMoney(m.cost, m.currency)}</div>
-            </div>
-          ))}
-          {(v.maintenance || []).length === 0 && <div className="empty">{t.none_due}</div>}
+          {(() => {
+            // Embedded vehicle logs + standalone hub work-orders targeting this vehicle.
+            const embedded = (v.maintenance || []).map((m) => ({ key: m.id, date: m.date, label: F.maintCatLabel(m.category, lang), vendor: m.vendor, note: lang === "ar" ? m.ar_note : m.note, odo: m.odometer, cost: m.cost, currency: m.currency }));
+            const fromHub = maintenance.filter((m) => m.targetType === "vehicle" && m.targetId === v.id).map((m) => ({ key: "log:" + m.id, date: m.logDate || m.scheduledDate, label: m.maintenanceType === "preventive" ? t.type_preventive : t.type_corrective, vendor: "", note: m.description, odo: m.meterReading, cost: m.cost, currency: "SAR", pending: m.status !== "completed" }));
+            const all = [...embedded, ...fromHub].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+            if (!all.length) return <div className="empty">{t.none_due}</div>;
+            return all.map((m) => (
+              <div className="list-row" key={m.key} style={{ gridTemplateColumns: "110px 1fr 110px 90px", cursor: "default" }}>
+                <div className="mono" style={{ fontSize: 12 }}>{m.date || "—"}</div>
+                <div className="ttl" dir="auto">{m.label}{m.vendor ? <span className="muted" style={{ fontSize: 12 }}> · {m.vendor}</span> : ""}{m.note ? <span className="muted" style={{ fontSize: 12 }}> — {m.note}</span> : ""}{m.pending ? <span className="tag" style={{ fontSize: 10, marginInlineStart: 6 }}>{t.status_scheduled}</span> : ""}</div>
+                <div className="mono muted" style={{ fontSize: 12 }}>{m.odo != null && m.odo !== "" ? `${Number(m.odo).toLocaleString()} ${t.km}` : "—"}</div>
+                <div className="mono" style={{ fontWeight: 600 }}>{m.cost ? D.fmtMoney(m.cost, m.currency) : "—"}</div>
+              </div>
+            ));
+          })()}
         </div>
       </div>
 

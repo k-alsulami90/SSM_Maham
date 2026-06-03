@@ -1615,6 +1615,40 @@ select.qf {
   .is-mobile .drawer, .is-mobile .modal, .sheet-scrim, .nav-scrim { animation: none; }
 }
 
+/* ============================================================
+   Motion & interaction polish (Emil Kowalski-inspired): fast eased
+   transitions, subtle press feedback, soft mount animations.
+   Gated behind prefers-reduced-motion for accessibility.
+   ============================================================ */
+:root { --ease-out: cubic-bezier(0.33, 1, 0.68, 1); --ease-spring: cubic-bezier(0.32, 0.72, 0, 1); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .icon-btn, .filter-pill, .chip, .swatch-btn, .mtab, .type-opt, .nav-item, .tabbar button {
+    transition: background-color .16s var(--ease-out), color .16s var(--ease-out),
+                border-color .16s var(--ease-out), box-shadow .16s var(--ease-out),
+                transform .12s var(--ease-out);
+  }
+  .btn:active:not(:disabled), .icon-btn:active, .filter-pill:active, .chip:active, .type-opt:active { transform: scale(0.97); }
+  .btn-primary:hover { box-shadow: 0 4px 14px oklch(0.45 0.07 150 / 0.22); }
+  .swatch-btn:hover { transform: scale(1.08); }
+
+  .metric, .panel { transition: border-color .18s var(--ease-out), box-shadow .18s var(--ease-out), transform .18s var(--ease-out); }
+  .metric.clickable:hover { transform: translateY(-2px); border-color: var(--line-strong); box-shadow: 0 6px 20px oklch(0.2 0.02 130 / 0.08); }
+
+  .list-row, .group-row, .queue-item { transition: background-color .14s var(--ease-out); }
+  .group-row:hover { background: var(--bg-sand); }
+
+  /* Overlay mount animations */
+  .modal { animation: pop-scale .22s var(--ease-out) both; }
+  .cmdk  { animation: pop-scale .20s var(--ease-out) both; }
+  .popover { animation: pop-fade .16s var(--ease-out) both; }
+  .toast { animation: toast-in .32s var(--ease-spring) both; }
+
+  @keyframes pop-scale { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
+  @keyframes pop-fade  { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  @keyframes toast-in  { from { opacity: 0; transform: translateY(14px) scale(0.96); } to { opacity: 1; transform: none; } }
+}
+
 /* ====== Dark theme ====== */
 :root[data-theme="dark"] {
   color-scheme: dark;

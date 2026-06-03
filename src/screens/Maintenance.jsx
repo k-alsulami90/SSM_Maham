@@ -3,9 +3,26 @@ import Icon from "../components/Icon.jsx";
 import { MetricCard } from "../components/DashWidgets.jsx";
 import SupplierRatingModal from "../components/SupplierRatingModal.jsx";
 import * as D from "../data/mock.js";
+import * as F from "../data/fleet.js";
+import * as A from "../data/assets.js";
 import { I18N } from "../data/i18n.js";
 import { useStore } from "../store/AppStore.jsx";
 import { useToast } from "../components/Toast.jsx";
+
+/* Normalize a vehicle/asset's embedded maintenance entry to the hub's shape so
+   the centralized page can show every maintenance event in one place. These
+   live on their parent record (read-only here; edited on the asset's page). */
+function normEmbed(m, targetType, targetId, label) {
+  return {
+    id: targetType + ":" + targetId + ":" + m.id, source: targetType, readOnly: true,
+    targetType, targetId, targetLabel: label,
+    maintenanceType: m.maintenanceType || "corrective", status: m.status || "completed",
+    logDate: m.date || m.logDate || "", scheduledDate: m.scheduledDate || "",
+    description: m.ar_note || m.note || "", cost: Number(m.cost) || 0,
+    supplierId: "", vendorName: m.vendor || "", meterReading: m.odometer ?? m.meterReading,
+    partsReplaced: m.partsReplaced || [],
+  };
+}
 
 const uid = () =>
   (typeof crypto !== "undefined" && crypto.randomUUID)
@@ -44,13 +61,20 @@ export default function Maintenance() {
 
   const supplierName = (id) => suppliers.find((s) => s.id === id)?.name || "";
 
+  // Unified view: standalone work-orders + embedded vehicle/asset maintenance.
+  const merged = [
+    ...maintenance.map((m) => ({ ...m, source: "log" })),
+    ...vehicles.flatMap((v) => (v.maintenance || []).map((m) => normEmbed(m, "vehicle", v.id, F.vehicleLabel(v)))),
+    ...assets.flatMap((a) => (a.maintenance || []).map((m) => normEmbed(m, "asset", a.id, A.assetName(a, "ar")))),
+  ];
+
   // ---- metrics ----
-  const active = maintenance.filter((m) => m.status !== "completed").length;
-  const monthCost = maintenance
+  const active = merged.filter((m) => m.status !== "completed").length;
+  const monthCost = merged
     .filter((m) => ymOf(m.logDate || m.scheduledDate) === ymOf(todayISO()))
     .reduce((s, m) => s + (Number(m.cost) || 0), 0);
-  const scheduledPrev = maintenance.filter((m) => m.status === "scheduled" && m.maintenanceType === "preventive").length;
-  const overdue = maintenance.filter((m) => m.status !== "completed" && m.scheduledDate && D.daysUntil(m.scheduledDate) < 0);
+  const scheduledPrev = merged.filter((m) => m.status === "scheduled" && m.maintenanceType === "preventive").length;
+  const overdue = merged.filter((m) => m.status !== "completed" && m.scheduledDate && D.daysUntil(m.scheduledDate) < 0);
 
   // ---- filtering ----
   const pass = (m) =>
@@ -58,7 +82,7 @@ export default function Maintenance() {
     (!filters.type || m.maintenanceType === filters.type) &&
     (!filters.supplier || m.supplierId === filters.supplier);
 
-  const items = maintenance.filter(pass);
+  const items = merged.filter(pass);
   const list = view === "history"
     ? [...items].sort((a, b) => (b.logDate || b.scheduledDate || "").localeCompare(a.logDate || a.scheduledDate || ""))
     : items.filter((m) => m.status !== "completed").sort((a, b) => (a.scheduledDate || "9999").localeCompare(b.scheduledDate || "9999"));
@@ -165,7 +189,7 @@ export default function Maintenance() {
           const od = m.status !== "completed" && m.scheduledDate && D.daysUntil(m.scheduledDate) < 0;
           const soon = m.status !== "completed" && m.scheduledDate && D.daysUntil(m.scheduledDate) >= 0 && D.daysUntil(m.scheduledDate) <= 7;
           return (
-            <div key={m.id} className="list-row" style={{ gridTemplateColumns: "1fr auto", alignItems: "center", cursor: "pointer" }} onClick={() => setEditing({ ...blankLog(), ...m })}>
+            <div key={m.id} className="list-row" style={{ gridTemplateColumns: "1fr auto", alignItems: "center", cursor: m.source === "log" ? "pointer" : "default" }} onClick={() => m.source === "log" && setEditing({ ...blankLog(), ...m })}>
               <div style={{ minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <span style={{ fontWeight: 600, fontSize: 14 }} dir="auto">{m.targetLabel || t.target_facility}</span>
@@ -178,12 +202,12 @@ export default function Maintenance() {
                 </div>
                 <div style={{ fontSize: 12, color: "var(--ink-500)", marginTop: 3, display: "flex", gap: 12, flexWrap: "wrap" }}>
                   {(m.scheduledDate || m.logDate) && <span><Icon name="calendar" size={11} /> {m.scheduledDate || m.logDate}</span>}
-                  {m.supplierId && <span dir="auto">{supplierName(m.supplierId)}</span>}
+                  {m.source === "log" ? (m.supplierId && <span dir="auto">{supplierName(m.supplierId)}</span>) : (m.vendorName && <span dir="auto">{m.vendorName}</span>)}
                   {Number(m.cost) > 0 && <span className="mono">{D.fmtMoney(m.cost)}</span>}
                 </div>
               </div>
               <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", gap: 6 }}>
-                {m.status !== "completed" && (
+                {m.source === "log" && m.status !== "completed" && (
                   <button className="btn btn-secondary" style={{ fontSize: 12 }} onClick={() => markCompleted(m)}>
                     <Icon name="check" size={12} /> {t.mark_completed}
                   </button>
