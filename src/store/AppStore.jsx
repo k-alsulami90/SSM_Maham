@@ -34,7 +34,7 @@ const PROJECTS_KEY = "maham.projects.v1";
 const SETTINGS_KEY = "maham.settings.v1";
 
 const DEFAULT_SETTINGS = {
-  lang: "en",          // "en" | "ar"
+  lang: "ar",          // "en" | "ar" — Arabic by default (toggle still available)
   accent: "forest",    // forest | clay | indigo | slate
   theme: "light",      // light | dark
   uiSize: "m",         // text/zoom size: s | m | l
