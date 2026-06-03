@@ -4,6 +4,7 @@ import { VEHICLES, buildFleetTasks, vehicleLabel } from "../data/fleet.js";
 import { ASSETS, buildAssetTasks } from "../data/assets.js";
 import { supabase, isSupabaseConfigured } from "../lib/supabase.js";
 import { hydrateAll, pushCollection, subscribeAll, TO_ROW } from "./sync.js";
+import { useAuth } from "../auth/AuthProvider.jsx";
 
 // Map a Supabase profile row to the user shape the app uses (avatar colour + initials).
 const USER_PALETTE = [
@@ -402,6 +403,7 @@ const StoreCtx = createContext(null);
 
 export function AppStoreProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, undefined, init);
+  const auth = useAuth();
 
   // Load the real team from Supabase profiles (replaces the local mock users).
   useEffect(() => {
@@ -424,16 +426,23 @@ export function AppStoreProvider({ children }) {
   const prevRef = useRef(null);
   useEffect(() => {
     if (!isSupabaseConfigured) return;
+    // Wait until the signed-in role is known — it gates what we may seed/write.
+    if (auth.configured && !auth.role) return;
+    // Only staff own the shared fleet/asset/project/task seed; members have no
+    // insert rights, so they must never attempt the one-time migration.
+    const isStaff = !auth.configured || auth.role === "admin" || auth.role === "manager";
     let cleanup;
     (async () => {
       const d = await hydrateAll();
       if (d) {
-        // One-time migration: seed any empty shared table from current local data.
-        if (!d.vehicles.length && state.vehicles.length) { await pushCollection("vehicles", state.vehicles, [], TO_ROW.vehicles); d.vehicles = state.vehicles; }
-        if (!d.projects.length && state.projects.length) { await pushCollection("projects", state.projects, [], TO_ROW.projects); d.projects = state.projects; }
-        if (!d.tasks.length && state.tasks.length) { await pushCollection("tasks", state.tasks, [], TO_ROW.tasks); d.tasks = state.tasks; }
-        if (!d.assets.length && state.assets.length) { await pushCollection("assets", state.assets, [], TO_ROW.assets); d.assets = state.assets; }
-        if (!d.templates.length && state.templates.length) { await pushCollection("recurring_templates", state.templates, [], TO_ROW.recurring_templates); d.templates = state.templates; }
+        if (isStaff) {
+          // One-time migration: seed any empty shared table from current local data.
+          if (!d.vehicles.length && state.vehicles.length) { await pushCollection("vehicles", state.vehicles, [], TO_ROW.vehicles); d.vehicles = state.vehicles; }
+          if (!d.projects.length && state.projects.length) { await pushCollection("projects", state.projects, [], TO_ROW.projects); d.projects = state.projects; }
+          if (!d.tasks.length && state.tasks.length) { await pushCollection("tasks", state.tasks, [], TO_ROW.tasks); d.tasks = state.tasks; }
+          if (!d.assets.length && state.assets.length) { await pushCollection("assets", state.assets, [], TO_ROW.assets); d.assets = state.assets; }
+          if (!d.templates.length && state.templates.length) { await pushCollection("recurring_templates", state.templates, [], TO_ROW.recurring_templates); d.templates = state.templates; }
+        }
         prevRef.current = { tasks: d.tasks, vehicles: d.vehicles, assets: d.assets, templates: d.templates, projects: d.projects };
         dispatch({ type: "HYDRATE", data: d });
       }
@@ -448,7 +457,7 @@ export function AppStoreProvider({ children }) {
     })();
     return () => { if (cleanup) cleanup(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [auth.configured, auth.role]);
 
   // Write-through: mirror each collection change to Supabase (after first hydrate).
   const pushable = (coll, table, toRow) => {

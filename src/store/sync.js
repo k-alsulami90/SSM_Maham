@@ -65,15 +65,30 @@ export async function hydrateAll() {
   }
 }
 
-// ----- write a collection (upsert changed by reference, delete removed) -----
+// ----- write a collection (insert new, update changed, delete removed) -----
+// IMPORTANT: we must NOT use upsert here. Supabase upsert runs INSERT … ON
+// CONFLICT, so RLS evaluates the INSERT policy even for an existing row. Members
+// have UPDATE rights on their own tasks but no INSERT policy, so an upsert of a
+// task they're just editing gets rejected and their change silently reverts.
+// Splitting inserts (new ids) from updates (existing ids) keeps member edits on
+// the UPDATE path, which their policy allows.
 export async function pushCollection(table, cur, prev, toRow) {
   try {
     const prevById = new Map((prev || []).map((x) => [x.id, x]));
-    const ups = cur.filter((x) => prevById.get(x.id) !== x).map(toRow);
-    if (ups.length) {
-      const { error } = await supabase.from(table).upsert(ups);
-      if (error) console.error(`[sync] upsert ${table}:`, error.message);
+    const changed = cur.filter((x) => prevById.get(x.id) !== x);
+
+    const inserts = changed.filter((x) => !prevById.has(x.id)).map(toRow);
+    if (inserts.length) {
+      const { error } = await supabase.from(table).insert(inserts);
+      if (error) console.error(`[sync] insert ${table}:`, error.message);
     }
+
+    const updates = changed.filter((x) => prevById.has(x.id)).map(toRow);
+    for (const row of updates) {
+      const { error } = await supabase.from(table).update(row).eq("id", row.id);
+      if (error) console.error(`[sync] update ${table}:`, error.message);
+    }
+
     const curIds = new Set(cur.map((x) => x.id));
     const dels = (prev || []).filter((x) => !curIds.has(x.id)).map((x) => x.id);
     if (dels.length) {
