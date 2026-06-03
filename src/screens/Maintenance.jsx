@@ -14,7 +14,7 @@ import { useToast } from "../components/Toast.jsx";
    live on their parent record (read-only here; edited on the asset's page). */
 function normEmbed(m, targetType, targetId, label) {
   return {
-    id: targetType + ":" + targetId + ":" + m.id, source: targetType, readOnly: true,
+    id: targetType + ":" + targetId + ":" + m.id, rawId: m.id, source: targetType, readOnly: true,
     targetType, targetId, targetLabel: label,
     maintenanceType: m.maintenanceType || "corrective", status: m.status || "completed",
     logDate: m.date || m.logDate || "", scheduledDate: m.scheduledDate || "",
@@ -54,7 +54,7 @@ export default function Maintenance() {
   const t = I18N[lang];
   const { notify } = useToast();
 
-  const [view, setView] = useState("upcoming");      // upcoming | history
+  const [view, setView] = useState("history");       // history (all) | upcoming
   const [filters, setFilters] = useState({ targetType: "", type: "", supplier: "" });
   const [editing, setEditing] = useState(null);
   const [completing, setCompleting] = useState(null); // log → rate its supplier
@@ -100,6 +100,14 @@ export default function Maintenance() {
     }
     notify(lang === "ar" ? "تم الحفظ" : "Saved");
     setEditing(null);
+  };
+
+  const removeRow = (m) => {
+    if (!window.confirm(lang === "ar" ? "حذف سجل الصيانة؟" : "Delete this maintenance record?")) return;
+    if (m.source === "log") dispatch({ type: "DELETE_MAINT_LOG", id: m.id });
+    else if (m.source === "vehicle") dispatch({ type: "DELETE_VEH_MAINT", vehicleId: m.targetId, entryId: m.rawId });
+    else if (m.source === "asset") dispatch({ type: "DELETE_ASSET_MAINT", assetId: m.targetId, entryId: m.rawId });
+    notify(lang === "ar" ? "تم الحذف" : "Deleted");
   };
 
   const markCompleted = (m) => {
@@ -206,12 +214,14 @@ export default function Maintenance() {
                   {Number(m.cost) > 0 && <span className="mono">{D.fmtMoney(m.cost)}</span>}
                 </div>
               </div>
-              <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", gap: 6 }}>
+              <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", gap: 6, alignItems: "center" }}>
                 {m.source === "log" && m.status !== "completed" && (
                   <button className="btn btn-secondary" style={{ fontSize: 12 }} onClick={() => markCompleted(m)}>
                     <Icon name="check" size={12} /> {t.mark_completed}
                   </button>
                 )}
+                {m.source !== "log" && <span className="tag" style={{ fontSize: 10 }}>{m.targetType === "vehicle" ? t.target_vehicle : t.target_asset}</span>}
+                <button className="icon-btn" onClick={() => removeRow(m)} aria-label={lang === "ar" ? "حذف" : "Delete"}><Icon name="trash" size={14} /></button>
               </div>
             </div>
           );

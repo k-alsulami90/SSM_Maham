@@ -289,6 +289,7 @@ function VehicleProfile({ vehicle: v, onBack }) {
   const eff = F.fuelEfficiency(v);
   const cost = F.vehicleCosts(v, CUR_MONTH);
   const [form, setForm] = useState(null); // "fuel" | "maint" | "doc" | "issue"
+  const [maintEdit, setMaintEdit] = useState(null); // embedded maintenance entry being edited
 
   return (
     <div className="content">
@@ -357,6 +358,7 @@ function VehicleProfile({ vehicle: v, onBack }) {
       </div>
 
       {form && form !== "assign" && form !== "edit" && <FleetForm kind={form} v={v} lang={lang} t={t} me={currentUserId} dispatch={dispatch} notify={notify} onDone={() => setForm(null)} />}
+      {maintEdit && <FleetForm kind="maint" v={v} editEntry={maintEdit} lang={lang} t={t} me={currentUserId} dispatch={dispatch} notify={notify} onDone={() => setMaintEdit(null)} />}
 
       {/* Documents */}
       <div className="panel" style={{ marginTop: 18 }}>
@@ -386,16 +388,24 @@ function VehicleProfile({ vehicle: v, onBack }) {
         <div style={{ padding: "6px 0" }}>
           {(() => {
             // Embedded vehicle logs + standalone hub work-orders targeting this vehicle.
-            const embedded = (v.maintenance || []).map((m) => ({ key: m.id, date: m.date, label: F.maintCatLabel(m.category, lang), vendor: m.vendor, note: lang === "ar" ? m.ar_note : m.note, odo: m.odometer, cost: m.cost, currency: m.currency }));
-            const fromHub = maintenance.filter((m) => m.targetType === "vehicle" && m.targetId === v.id).map((m) => ({ key: "log:" + m.id, date: m.logDate || m.scheduledDate, label: m.maintenanceType === "preventive" ? t.type_preventive : t.type_corrective, vendor: "", note: m.description, odo: m.meterReading, cost: m.cost, currency: "SAR", pending: m.status !== "completed" }));
+            const embedded = (v.maintenance || []).map((m) => ({ key: m.id, embedded: true, raw: m, date: m.date, label: F.maintCatLabel(m.category, lang), vendor: m.vendor, note: lang === "ar" ? m.ar_note : m.note, odo: m.odometer, cost: m.cost, currency: m.currency }));
+            const fromHub = maintenance.filter((m) => m.targetType === "vehicle" && m.targetId === v.id).map((m) => ({ key: "log:" + m.id, date: m.logDate || m.scheduledDate, label: m.maintenanceType === "preventive" ? t.type_preventive : t.type_corrective, vendor: m.vendorName || "", note: m.description, odo: m.meterReading, cost: m.cost, currency: "SAR", pending: m.status !== "completed" }));
             const all = [...embedded, ...fromHub].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
             if (!all.length) return <div className="empty">{t.none_due}</div>;
             return all.map((m) => (
-              <div className="list-row" key={m.key} style={{ gridTemplateColumns: "110px 1fr 110px 90px", cursor: "default" }}>
+              <div className="list-row" key={m.key} style={{ gridTemplateColumns: "100px 1fr 90px 80px auto", cursor: "default", alignItems: "center" }}>
                 <div className="mono" style={{ fontSize: 12 }}>{m.date || "—"}</div>
                 <div className="ttl" dir="auto">{m.label}{m.vendor ? <span className="muted" style={{ fontSize: 12 }}> · {m.vendor}</span> : ""}{m.note ? <span className="muted" style={{ fontSize: 12 }}> — {m.note}</span> : ""}{m.pending ? <span className="tag" style={{ fontSize: 10, marginInlineStart: 6 }}>{t.status_scheduled}</span> : ""}</div>
                 <div className="mono muted" style={{ fontSize: 12 }}>{m.odo != null && m.odo !== "" ? `${Number(m.odo).toLocaleString()} ${t.km}` : "—"}</div>
                 <div className="mono" style={{ fontWeight: 600 }}>{m.cost ? D.fmtMoney(m.cost, m.currency) : "—"}</div>
+                <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
+                  {isManager && m.embedded && (
+                    <>
+                      <button className="icon-btn" onClick={() => { setForm(null); setMaintEdit(m.raw); }} aria-label={t.edit_details}><Icon name="edit" size={13} /></button>
+                      <button className="icon-btn" onClick={() => { if (window.confirm(lang === "ar" ? "حذف سجل الصيانة؟" : "Delete this maintenance record?")) dispatch({ type: "DELETE_VEH_MAINT", vehicleId: v.id, entryId: m.raw.id }); }} aria-label={t.delete}><Icon name="trash" size={13} /></button>
+                    </>
+                  )}
+                </div>
               </div>
             ));
           })()}
@@ -503,16 +513,16 @@ function VehicleEditForm({ v, lang, t, dispatch, notify, onDone }) {
 }
 
 /* ----- Inline add forms (fuel / maintenance / document / issue) ----- */
-function FleetForm({ kind, v, lang, t, me, dispatch, notify, onDone }) {
+function FleetForm({ kind, v, editEntry, lang, t, me, dispatch, notify, onDone }) {
   const [s, setS] = useState({
-    date: ISO_TODAY,
-    odometer: v.odometer,
+    date: editEntry?.date || ISO_TODAY,
+    odometer: editEntry?.odometer ?? v.odometer,
     liters: "",
-    cost: "",
+    cost: editEntry?.cost ?? "",
     station: "",
-    category: "service",
-    vendor: "",
-    note: "",
+    category: editEntry?.category || "service",
+    vendor: editEntry?.vendor || "",
+    note: editEntry ? (lang === "ar" ? editEntry.ar_note : editEntry.note) || "" : "",
     reset: true,
     docKind: "registration",
     number: "",
@@ -528,7 +538,9 @@ function FleetForm({ kind, v, lang, t, me, dispatch, notify, onDone }) {
       dispatch({ type: "ADD_FUEL", vehicleId: v.id, entry: { id: "f" + Date.now(), date: s.date, odometer: Number(s.odometer) || v.odometer, liters: Number(s.liters) || 0, cost: Number(s.cost) || 0, currency: "SAR", station: s.station.trim() } });
       notify(t.toast_logged);
     } else if (kind === "maint") {
-      dispatch({ type: "ADD_MAINTENANCE", vehicleId: v.id, resetsSchedule: s.reset, entry: { id: "m" + Date.now(), date: s.date, odometer: Number(s.odometer) || v.odometer, category: s.category, cost: Number(s.cost) || 0, currency: "SAR", vendor: s.vendor.trim(), note: s.note.trim(), ar_note: s.note.trim() } });
+      const patch = { date: s.date, odometer: Number(s.odometer) || v.odometer, category: s.category, cost: Number(s.cost) || 0, currency: "SAR", vendor: s.vendor.trim(), note: s.note.trim(), ar_note: s.note.trim() };
+      if (editEntry) dispatch({ type: "UPDATE_VEH_MAINT", vehicleId: v.id, entryId: editEntry.id, patch });
+      else dispatch({ type: "ADD_MAINTENANCE", vehicleId: v.id, resetsSchedule: s.reset, entry: { id: "m" + Date.now(), ...patch } });
       notify(t.toast_logged);
     } else if (kind === "doc") {
       if (!s.expires) return;

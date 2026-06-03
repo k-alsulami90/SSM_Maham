@@ -322,6 +322,12 @@ export function reducer(state, action) {
           : v.schedule,
       }));
 
+    case "UPDATE_VEH_MAINT":
+      return mapVehicle(state, action.vehicleId, (v) => ({ ...v, maintenance: (v.maintenance || []).map((m) => (m.id === action.entryId ? { ...m, ...action.patch } : m)) }));
+
+    case "DELETE_VEH_MAINT":
+      return mapVehicle(state, action.vehicleId, (v) => ({ ...v, maintenance: (v.maintenance || []).filter((m) => m.id !== action.entryId) }));
+
     case "ADD_VEHICLE_DOC":
       return mapVehicle(state, action.vehicleId, (v) => ({ ...v, documents: [...(v.documents || []), action.doc] }));
 
@@ -376,6 +382,12 @@ export function reducer(state, action) {
         maintenance: [...(a.maintenance || []), action.entry],
         schedule: action.resetsSchedule && a.schedule ? { ...a.schedule, lastServiceDate: action.entry.date } : a.schedule,
       }));
+
+    case "UPDATE_ASSET_MAINT":
+      return mapAsset(state, action.assetId, (a) => ({ ...a, maintenance: (a.maintenance || []).map((m) => (m.id === action.entryId ? { ...m, ...action.patch } : m)) }));
+
+    case "DELETE_ASSET_MAINT":
+      return mapAsset(state, action.assetId, (a) => ({ ...a, maintenance: (a.maintenance || []).filter((m) => m.id !== action.entryId) }));
 
     case "ADD_ASSET_DOC":
       return mapAsset(state, action.assetId, (a) => ({ ...a, documents: [...(a.documents || []), action.doc] }));

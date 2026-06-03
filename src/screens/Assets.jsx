@@ -429,6 +429,7 @@ function AssetProfile({ asset: a, onBack }) {
   const cost = A.assetCosts(a);
   const warranty = (a.documents || []).map((d) => (d.expires ? { d, ...F.docExpiryState(d.expires) } : null)).filter(Boolean).sort((x, y) => x.days - y.days)[0];
   const [form, setForm] = useState(null);
+  const [maintEdit, setMaintEdit] = useState(null);
 
   return (
     <div className="content">
@@ -478,6 +479,7 @@ function AssetProfile({ asset: a, onBack }) {
       </div>
 
       {form && form !== "assign" && form !== "edit" && <AssetForm kind={form} a={a} lang={lang} t={t} me={currentUserId} dispatch={dispatch} notify={notify} onDone={() => setForm(null)} />}
+      {maintEdit && <AssetForm kind="maint" a={a} editEntry={maintEdit} lang={lang} t={t} me={currentUserId} dispatch={dispatch} notify={notify} onDone={() => setMaintEdit(null)} />}
 
       {/* Documents */}
       <div className="panel" style={{ marginTop: 18 }}>
@@ -504,15 +506,23 @@ function AssetProfile({ asset: a, onBack }) {
         <div className="panel-head"><div><div className="title">{t.maintenance}</div></div></div>
         <div style={{ padding: "6px 0" }}>
           {(() => {
-            const embedded = (a.maintenance || []).map((m) => ({ key: m.id, date: m.date, label: A.assetMaintCatLabel(m.category, lang), vendor: m.vendor, note: lang === "ar" ? m.ar_note : m.note, cost: m.cost, currency: m.currency }));
-            const fromHub = maintenance.filter((m) => m.targetType === "asset" && m.targetId === a.id).map((m) => ({ key: "log:" + m.id, date: m.logDate || m.scheduledDate, label: m.maintenanceType === "preventive" ? t.type_preventive : t.type_corrective, vendor: "", note: m.description, cost: m.cost, currency: "SAR", pending: m.status !== "completed" }));
+            const embedded = (a.maintenance || []).map((m) => ({ key: m.id, embedded: true, raw: m, date: m.date, label: A.assetMaintCatLabel(m.category, lang), vendor: m.vendor, note: lang === "ar" ? m.ar_note : m.note, cost: m.cost, currency: m.currency }));
+            const fromHub = maintenance.filter((m) => m.targetType === "asset" && m.targetId === a.id).map((m) => ({ key: "log:" + m.id, date: m.logDate || m.scheduledDate, label: m.maintenanceType === "preventive" ? t.type_preventive : t.type_corrective, vendor: m.vendorName || "", note: m.description, cost: m.cost, currency: "SAR", pending: m.status !== "completed" }));
             const all = [...embedded, ...fromHub].sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));
             if (!all.length) return <div className="empty">{t.none_due}</div>;
             return all.map((m) => (
-              <div className="list-row" key={m.key} style={{ gridTemplateColumns: "110px 1fr 90px", cursor: "default" }}>
+              <div className="list-row" key={m.key} style={{ gridTemplateColumns: "100px 1fr 80px auto", cursor: "default", alignItems: "center" }}>
                 <div className="mono" style={{ fontSize: 12 }}>{m.date || "—"}</div>
                 <div className="ttl" dir="auto">{m.label}{m.vendor ? <span className="muted" style={{ fontSize: 12 }}> · {m.vendor}</span> : ""}{m.note ? <span className="muted" style={{ fontSize: 12 }}> — {m.note}</span> : ""}{m.pending ? <span className="tag" style={{ fontSize: 10, marginInlineStart: 6 }}>{t.status_scheduled}</span> : ""}</div>
                 <div className="mono" style={{ fontWeight: 600 }}>{m.cost ? D.fmtMoney(m.cost, m.currency) : "—"}</div>
+                <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
+                  {isManager && m.embedded && (
+                    <>
+                      <button className="icon-btn" onClick={() => { setForm(null); setMaintEdit(m.raw); }} aria-label={t.edit_details}><Icon name="edit" size={13} /></button>
+                      <button className="icon-btn" onClick={() => { if (window.confirm(lang === "ar" ? "حذف سجل الصيانة؟" : "Delete this maintenance record?")) dispatch({ type: "DELETE_ASSET_MAINT", assetId: a.id, entryId: m.raw.id }); }} aria-label={t.delete}><Icon name="trash" size={13} /></button>
+                    </>
+                  )}
+                </div>
               </div>
             ));
           })()}
@@ -577,14 +587,16 @@ function AssetEditForm({ a, lang, t, dispatch, notify, onDone }) {
   );
 }
 
-function AssetForm({ kind, a, lang, t, me, dispatch, notify, onDone }) {
-  const [s, setS] = useState({ date: ISO_TODAY, category: "service", cost: "", vendor: "", note: "", reset: true, docKind: "warranty", number: "", issued: ISO_TODAY, expires: "", text: "" });
+function AssetForm({ kind, a, editEntry, lang, t, me, dispatch, notify, onDone }) {
+  const [s, setS] = useState({ date: editEntry?.date || ISO_TODAY, category: editEntry?.category || "service", cost: editEntry?.cost ?? "", vendor: editEntry?.vendor || "", note: editEntry ? (lang === "ar" ? editEntry.ar_note : editEntry.note) || "" : "", reset: true, docKind: "warranty", number: "", issued: ISO_TODAY, expires: "", text: "" });
   const set = (k, v) => setS({ ...s, [k]: v });
 
   const submit = (e) => {
     e.preventDefault();
     if (kind === "maint") {
-      dispatch({ type: "ADD_ASSET_MAINTENANCE", assetId: a.id, resetsSchedule: s.reset && A.ASSET_RESETS_SCHEDULE.has(s.category), entry: { id: "m" + Date.now(), date: s.date, category: s.category, cost: Number(s.cost) || 0, currency: "SAR", vendor: s.vendor.trim(), note: s.note.trim(), ar_note: s.note.trim() } });
+      const patch = { date: s.date, category: s.category, cost: Number(s.cost) || 0, currency: "SAR", vendor: s.vendor.trim(), note: s.note.trim(), ar_note: s.note.trim() };
+      if (editEntry) dispatch({ type: "UPDATE_ASSET_MAINT", assetId: a.id, entryId: editEntry.id, patch });
+      else dispatch({ type: "ADD_ASSET_MAINTENANCE", assetId: a.id, resetsSchedule: s.reset && A.ASSET_RESETS_SCHEDULE.has(s.category), entry: { id: "m" + Date.now(), ...patch } });
       notify(t.toast_logged);
     } else if (kind === "doc") {
       dispatch({ type: "ADD_ASSET_DOC", assetId: a.id, doc: { id: "d" + Date.now(), kind: s.docKind, number: s.number.trim(), issued: s.issued, expires: s.expires, fileName: "" } });
