@@ -84,9 +84,9 @@ export default function Suppliers() {
               </div>
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", fontSize: 12.5, color: "var(--ink-500)" }}>
-              {s.contactName && <span><Icon name="user" size={11} /> {s.contactName}</span>}
-              {s.phone && <span dir="ltr"><Icon name="bell" size={11} /> {s.phone}</span>}
-              {s.paymentTerms && <span><Icon name="quote" size={11} /> {s.paymentTerms}</span>}
+              {s.contactName && <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="user" size={11} /> {s.contactName}</span>}
+              {s.phone && <span dir="ltr" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="msg" size={11} /> {s.phone}</span>}
+              {s.paymentTerms && <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="quote" size={11} /> {s.paymentTerms}</span>}
             </div>
             <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
               <button className="btn btn-secondary" style={{ flex: 1, justifyContent: "center", fontSize: 12.5 }} onClick={() => setRating(s)}>
