@@ -205,7 +205,7 @@ export function ActivityFeed({ onOpen }) {
                   <button onClick={() => onOpen(a.task.id)} style={{ color: "var(--acc-forest)", fontWeight: 500 }}>
                     {a.task.id}
                   </button>
-                  <span className="when">{a.at}</span>
+                  <span className="when">{a.ts ? D.timeAgo(a.ts, lang) : a.at}</span>
                 </div>
               </div>
             );

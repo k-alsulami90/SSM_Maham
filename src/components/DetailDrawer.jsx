@@ -280,7 +280,7 @@ export default function DetailDrawer({ taskId, lang, onClose }) {
                     <div className="bub system">
                       <span style={{ color: "var(--ink-700)", fontWeight: 500 }}>{D.userName(who, lang)}</span>{" "}
                       {lang === "ar" ? a.ar : a.text}
-                      <span style={{ marginInlineStart: 6, color: "var(--ink-300)" }}>· {a.at}</span>
+                      <span style={{ marginInlineStart: 6, color: "var(--ink-300)" }}>· {a.ts ? D.timeAgo(a.ts, lang) : a.at}</span>
                     </div>
                   </div>
                 );
@@ -290,7 +290,7 @@ export default function DetailDrawer({ taskId, lang, onClose }) {
                   <span className="av" style={{ background: who?.color }}>{who?.initials}</span>
                   <div className="bub">
                     <span className="who">{D.userName(who, lang)}</span>
-                    <span className="when">{a.at}</span>
+                    <span className="when">{a.ts ? D.timeAgo(a.ts, lang) : a.at}</span>
                     <div style={{ marginTop: 3, color: "var(--ink-700)" }}>{lang === "ar" ? a.ar : a.text}</div>
                   </div>
                 </div>

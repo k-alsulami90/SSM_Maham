@@ -578,9 +578,11 @@ function AssetProfile({ asset: a, onBack }) {
 
 /* Edit an asset's core identity / value / schedule. */
 function AssetEditForm({ a, lang, t, dispatch, notify, onDone }) {
+  const isBulk = a.tracking === "bulk";
   const [s, setS] = useState({
     name: a.name || "", ar_name: a.ar_name || "", tag: a.tag || "", category: a.category || "it",
     status: a.status || "in_use", location: a.location || "", ar_location: a.ar_location || "",
+    make: a.make || "", model: a.model || "", quantity: a.quantity || 1, serial: a.serial || "",
     purchaseValue: a.purchaseValue || "", purchaseDate: a.purchaseDate || "",
     everyMonths: a.schedule?.everyMonths || "",
   });
@@ -593,6 +595,8 @@ function AssetEditForm({ a, lang, t, dispatch, notify, onDone }) {
       patch: {
         name: s.name.trim() || a.name, ar_name: s.ar_name.trim(), tag: s.tag.trim(),
         category: s.category, status: s.status, location: s.location.trim(), ar_location: s.ar_location.trim(),
+        make: s.make.trim(), model: s.model.trim(),
+        ...(isBulk ? { quantity: Number(s.quantity) || 1 } : { serial: s.serial.trim() }),
         purchaseValue: Number(s.purchaseValue) || 0, purchaseDate: s.purchaseDate,
         schedule: months > 0 ? { everyMonths: months, lastServiceDate: a.schedule?.lastServiceDate || ISO_TODAY } : null,
       },
@@ -607,11 +611,22 @@ function AssetEditForm({ a, lang, t, dispatch, notify, onDone }) {
         <label className="qf-cell"><span className="qf-label">{lang === "ar" ? "الاسم (عربي)" : "Name (Arabic)"}</span><input className="qf" dir="auto" value={s.ar_name} onChange={(e) => set("ar_name", e.target.value)} /></label>
       </div>
       <div className="qf-row">
-        <label className="qf-cell"><span className="qf-label">{t.tag}</span><input className="qf" dir="auto" value={s.tag} onChange={(e) => set("tag", e.target.value)} /></label>
+        <label className="qf-cell"><span className="qf-label">{t.make}</span><input className="qf" dir="auto" value={s.make} onChange={(e) => set("make", e.target.value)} /></label>
+        <label className="qf-cell"><span className="qf-label">{t.model}</span><input className="qf" dir="auto" value={s.model} onChange={(e) => set("model", e.target.value)} /></label>
+      </div>
+      <div className="qf-row">
         <label className="qf-cell"><span className="qf-label">{t.category}</span>
           <select className="qf" value={s.category} onChange={(e) => set("category", e.target.value)}>{Object.keys(A.ASSET_CATEGORY_META).map((k) => <option key={k} value={k}>{A.assetCategoryLabel(k, lang)}</option>)}</select>
         </label>
+        {isBulk ? (
+          <label className="qf-cell"><span className="qf-label">{t.quantity}</span><input className="qf" type="number" inputMode="numeric" dir="ltr" min="1" value={s.quantity} onChange={(e) => set("quantity", e.target.value)} /></label>
+        ) : (
+          <label className="qf-cell"><span className="qf-label">{t.tag} (QR)</span><input className="qf" dir="ltr" value={s.tag} onChange={(e) => set("tag", e.target.value)} /></label>
+        )}
       </div>
+      {!isBulk && (
+        <label className="qf-cell"><span className="qf-label">{t.serial_number}</span><input className="qf" dir="ltr" value={s.serial} onChange={(e) => set("serial", e.target.value)} /></label>
+      )}
       <div className="qf-row">
         <label className="qf-cell"><span className="qf-label">{t.filter_status}</span>
           <select className="qf" value={s.status} onChange={(e) => set("status", e.target.value)}>{Object.keys(A.ASSET_STATUS_META).map((k) => <option key={k} value={k}>{A.ASSET_STATUS_META[k][lang]}</option>)}</select>

@@ -68,6 +68,21 @@ export function daysUntil(iso) {
   const d = new Date(iso);
   return Math.round((d - TODAY) / 86400000);
 }
+/* Relative time for discussion / activity, from a real timestamp (ms). */
+export function timeAgo(ts, lang) {
+  if (!ts) return "";
+  const sec = Math.floor((Date.now() - ts) / 1000);
+  const min = Math.floor(sec / 60), hr = Math.floor(min / 60), day = Math.floor(hr / 24);
+  const ar = lang === "ar";
+  if (sec < 45) return ar ? "الآن" : "just now";
+  if (min < 60) return ar ? `قبل ${min} د` : `${min}m ago`;
+  if (hr < 24) return ar ? `قبل ${hr} س` : `${hr}h ago`;
+  if (day === 1) return ar ? "أمس" : "yesterday";
+  if (day < 7) return ar ? `قبل ${day} أيام` : `${day}d ago`;
+  const d = new Date(ts);
+  const month = d.toLocaleString(ar ? "ar-EG" : "en-US", { month: "short" });
+  return `${month} ${d.getDate()}`;
+}
 export function dueLabel(iso, lang) {
   const n = daysUntil(iso);
   if (n < 0) return (lang === "ar" ? "متأخرة " : "") + Math.abs(n) + (lang === "ar" ? " يوم" : "d overdue");

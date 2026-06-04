@@ -181,7 +181,7 @@ export default function ManagerDashboard({ onOpen, onNav }) {
                   <div className="meta">
                     <span className="who"><Avatar user={u} size={14} /> {D.userName(u, lang)}</span>
                     <span>·</span>
-                    <span>{t.submitted} <span className="mono">{task.activity.slice(-1)[0]?.at}</span></span>
+                    <span>{t.submitted} <span className="mono">{(() => { const a = task.activity.slice(-1)[0]; return a?.ts ? D.timeAgo(a.ts, lang) : a?.at; })()}</span></span>
                     <span>·</span>
                     <span>{t.in} <b style={{ color: "var(--ink-700)" }}>{D.projectName(p, lang)}</b></span>
                   </div>

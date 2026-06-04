@@ -3,48 +3,6 @@ import Icon from "./Icon.jsx";
 import * as D from "../data/mock.js";
 import { I18N } from "../data/i18n.js";
 
-function ChipDropdown({ icon, label, value, active, options, onChange }) {
-  const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState(null);
-  const btnRef = useRef(null);
-  const rtl = typeof document !== "undefined" && document.documentElement.dir === "rtl";
-
-  // Fixed positioning so the menu isn't clipped by the scrollable modal body.
-  // (Mobile turns .popover into a bottom sheet via !important, which still wins.)
-  const toggle = () => {
-    if (open) return setOpen(false);
-    const r = btnRef.current.getBoundingClientRect();
-    setPos({ top: r.bottom + 6, left: r.left, right: window.innerWidth - r.right, width: r.width });
-    setOpen(true);
-  };
-  useEffect(() => {
-    if (!open) return;
-    const close = () => setOpen(false);
-    window.addEventListener("scroll", close, true);
-    window.addEventListener("resize", close);
-    return () => { window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); };
-  }, [open]);
-
-  return (
-    <div style={{ position: "relative" }}>
-      <button ref={btnRef} className={`chip ${active ? "active" : ""}`} onClick={toggle} type="button">
-        <Icon name={icon} size={11} className="ico" />
-        {value || label}
-        <Icon name="chev_down" size={10} className="ico" />
-      </button>
-      {open && pos && (
-        <div className="popover" style={{ position: "fixed", top: pos.top, [rtl ? "right" : "left"]: rtl ? pos.right : pos.left, minWidth: Math.max(160, pos.width) }} onMouseLeave={() => setOpen(false)}>
-          {options.map((o) => (
-            <button key={o.id} type="button" className="pop-item" onClick={() => { onChange(o.id); setOpen(false); }}>
-              {o.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* Create modal — choose a task type (assignment / procurement / recurring),
    then type-specific fields. Recurring tasks become templates. */
 export default function CreateTaskModal({ lang, onClose, onCreate, presetType = "assignment" }) {
@@ -139,35 +97,41 @@ export default function CreateTaskModal({ lang, onClose, onCreate, presetType = 
           />
           <textarea className="desc-input" dir="auto" placeholder={t.desc_placeholder} rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} />
           <hr className="hr" />
-          <div className="chip-row">
-            <ChipDropdown icon="flag" label={t.priority} value={D.priorityLabel(priority, lang)} active options={Object.keys(D.PRIORITY_META).map((k) => ({ id: k, label: D.priorityLabel(k, lang) }))} onChange={setPriority} />
-            <ChipDropdown icon="layers" label={t.project} value={D.projectName(D.findProject(project), lang)} active options={D.getProjects().map((p) => ({ id: p.id, label: D.projectName(p, lang) }))} onChange={setProject} />
-            <ChipDropdown icon="user" label={t.assignee} value={D.userName(D.findUser(assignee), lang)} active options={D.getUsers().filter((u) => u.role === "member").map((u) => ({ id: u.id, label: D.userName(u, lang) }))} onChange={setAssignee} />
+          {/* Clean labeled selects (native, open adjacent — no floating popovers) */}
+          <div className="qf-row">
+            <label className="qf-cell"><span className="qf-label">{t.priority}</span>
+              <select className="qf" value={priority} onChange={(e) => setPriority(e.target.value)}>
+                {Object.keys(D.PRIORITY_META).map((k) => <option key={k} value={k}>{D.priorityLabel(k, lang)}</option>)}
+              </select>
+            </label>
+            <label className="qf-cell"><span className="qf-label">{t.project}</span>
+              <select className="qf" value={project} onChange={(e) => setProject(e.target.value)}>
+                {D.getProjects().map((p) => <option key={p.id} value={p.id}>{D.projectName(p, lang)}</option>)}
+              </select>
+            </label>
+          </div>
+          <div className="qf-row">
+            <label className="qf-cell"><span className="qf-label">{t.assignee}</span>
+              <select className="qf" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
+                {D.getUsers().filter((u) => u.role === "member").map((u) => <option key={u.id} value={u.id}>{D.userName(u, lang)}</option>)}
+              </select>
+            </label>
             {type === "recurring" ? (
-              <>
-                <ChipDropdown icon="repeat" label={t.repeats} value={D.RECURRENCE_META[freq][lang]} active options={freqOptions} onChange={setFreq} />
-                {freq === "weekly" && (
-                  <label className="chip active" style={{ gap: 6 }}>
-                    <Icon name="calendar" size={11} className="ico" /> {t.on_day}
-                    <select value={day} onChange={(e) => setDay(e.target.value)} style={{ border: 0, background: "transparent", outline: "none", color: "inherit", font: "inherit" }}>
-                      {["sun", "mon", "tue", "wed", "thu", "fri", "sat"].map((d) => <option key={d} value={d}>{t.weekdays[d]}</option>)}
-                    </select>
-                  </label>
-                )}
-                {freq === "monthly" && (
-                  <label className="chip active" style={{ gap: 6 }}>
-                    <Icon name="calendar" size={11} className="ico" /> {t.day_of_month}
-                    <input type="number" min="1" max="31" value={dom} onChange={(e) => setDom(e.target.value)} style={{ width: 44, border: 0, background: "transparent", outline: "none", color: "inherit", font: "inherit" }} />
-                  </label>
-                )}
-              </>
-            ) : (
-              <label className="chip active" style={{ gap: 6 }}>
-                <Icon name="calendar" size={11} className="ico" /> {t.due}
-                <input type="date" value={due} onChange={(e) => setDue(e.target.value)} style={{ border: 0, background: "transparent", outline: "none", color: "inherit", font: "inherit" }} />
+              <label className="qf-cell"><span className="qf-label">{t.repeats}</span>
+                <select className="qf" value={freq} onChange={(e) => setFreq(e.target.value)}>{freqOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}</select>
               </label>
+            ) : (
+              <label className="qf-cell"><span className="qf-label">{t.due}</span><input type="date" className="qf" value={due} onChange={(e) => setDue(e.target.value)} /></label>
             )}
           </div>
+          {type === "recurring" && freq === "weekly" && (
+            <label className="qf-cell"><span className="qf-label">{t.on_day}</span>
+              <select className="qf" value={day} onChange={(e) => setDay(e.target.value)}>{["sun", "mon", "tue", "wed", "thu", "fri", "sat"].map((d) => <option key={d} value={d}>{t.weekdays[d]}</option>)}</select>
+            </label>
+          )}
+          {type === "recurring" && freq === "monthly" && (
+            <label className="qf-cell"><span className="qf-label">{t.day_of_month}</span><input type="number" min="1" max="31" className="qf" value={dom} onChange={(e) => setDom(e.target.value)} /></label>
+          )}
           {type === "procurement" && (
             <div className="muted" style={{ fontSize: 11.5, display: "inline-flex", alignItems: "center", gap: 5 }}>
               <Icon name="quote" size={12} /> {lang === "ar" ? "سيجمع المُسنَد إليه عروض الأسعار ثم ترفعها للاختيار." : "The assignee will gather quotations, then submit them for your selection."}

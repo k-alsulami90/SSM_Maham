@@ -1674,6 +1674,13 @@ select.qf {
 .list-row > * { min-width: 0; }
 .ttl, .drawer-head .tt, .card .title, .queue-item .title, .metric .value, .panel-head .title { overflow-wrap: anywhere; }
 
+/* Rows follow the page's reading direction even when an item name is Latin
+   (Arabic UI = RTL rows). The name text itself still renders left-to-right. */
+[dir="rtl"] .list-row .ttl,
+[dir="rtl"] .group-row,
+[dir="rtl"] .queue-item .title,
+[dir="rtl"] .card .title { direction: rtl; unicode-bidi: isolate; }
+
 /* ====== Motion (Pass 5): scoped, purposeful, reduced-motion safe ====== */
 @media (prefers-reduced-motion: no-preference) {
   /* Kanban cards: capped sibling stagger on appear (and on column move). */

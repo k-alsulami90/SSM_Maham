@@ -173,7 +173,7 @@ export function reducer(state, action) {
         progress: status === "done" ? 100 : t.progress,
         activity: [
           ...(t.activity || []),
-          { kind: "system", who: actorId, at: "Today", text: ACTION_TEXT[key]?.text || "updated", ar: ACTION_TEXT[key]?.ar || "حدّث" },
+          { kind: "system", who: actorId, ts: Date.now(), at: "Today", text: ACTION_TEXT[key]?.text || "updated", ar: ACTION_TEXT[key]?.ar || "حدّث" },
         ],
       }));
       // Completing a recurring instance records the period on its template (streak).
@@ -209,7 +209,7 @@ export function reducer(state, action) {
     case "ADD_COMMENT":
       return mapTask(state, action.id, (t) => ({
         ...t,
-        activity: [...(t.activity || []), { kind: "msg", who: action.actorId, at: "Just now", text: action.text, ar: action.text }],
+        activity: [...(t.activity || []), { kind: "msg", who: action.actorId, ts: Date.now(), at: "Just now", text: action.text, ar: action.text }],
       }));
 
     case "ADD_ATTACHMENTS":
@@ -246,7 +246,7 @@ export function reducer(state, action) {
           ...t,
           selectedQuotationId: quoteId,
           status: "progress", // member now proceeds with the chosen vendor
-          activity: [...(t.activity || []), { kind: "system", who: actorId, at: "Today", text, ar }],
+          activity: [...(t.activity || []), { kind: "system", who: actorId, ts: Date.now(), at: "Today", text, ar }],
         };
       });
     }
@@ -364,7 +364,7 @@ export function reducer(state, action) {
         selectedQuotationId: null,
         vehicleId: v.id,
         fleet: true,
-        activity: [{ kind: "msg", who: action.actorId, at: "Just now", text: action.text, ar: action.text }],
+        activity: [{ kind: "msg", who: action.actorId, ts: Date.now(), at: "Just now", text: action.text, ar: action.text }],
       };
       return { ...state, tasks: [...state.tasks, task] };
     }
@@ -419,7 +419,7 @@ export function reducer(state, action) {
         selectedQuotationId: null,
         assetId: a.id,
         asset: true,
-        activity: [{ kind: "msg", who: action.actorId, at: "Just now", text: action.text, ar: action.text }],
+        activity: [{ kind: "msg", who: action.actorId, ts: Date.now(), at: "Just now", text: action.text, ar: action.text }],
       };
       return { ...state, tasks: [...state.tasks, task] };
     }
