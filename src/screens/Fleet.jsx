@@ -361,7 +361,7 @@ function VehicleProfile({ vehicle: v, onBack }) {
       <div className="veh-head">
         <div className="veh-ico"><Icon name="car" size={26} /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h1 className="h" style={{ fontSize: 20 }}>{F.vehicleLabel(v)}{v.year ? ` · ${v.year}` : ""}</h1>
+          <h1 className="h" style={{ fontSize: 22 }}>{F.vehicleLabel(v)}{v.year ? ` · ${v.year}` : ""}</h1>
           <div className="sub" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginTop: 4 }}>
             <span className="mono" dir="auto">{v.plate}{v.internalNo != null ? ` · #${v.internalNo}` : ""}</span>
             <StatusPill v={v} lang={lang} />

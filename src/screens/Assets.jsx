@@ -455,7 +455,7 @@ function AssetProfile({ asset: a, onBack }) {
       <div className="veh-head">
         <div className="veh-ico"><Icon name={catIcon(a.category)} size={26} /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h1 className="h" style={{ fontSize: 20 }} dir="auto">{A.assetName(a, lang)}</h1>
+          <h1 className="h" style={{ fontSize: 22 }} dir="auto">{A.assetName(a, lang)}</h1>
           <div className="sub" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginTop: 4 }}>
             <span className="mono">{a.tag}</span>
             <span>{A.assetCategoryLabel(a.category, lang)}</span>
