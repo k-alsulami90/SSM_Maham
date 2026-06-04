@@ -11,6 +11,11 @@ import AssignEditor from "../components/AssignEditor.jsx";
 
 const CUR_MONTH = D.TODAY.toISOString().slice(0, 10).slice(0, 7);
 const ISO_TODAY = D.TODAY.toISOString().slice(0, 10);
+const MONTHS = {
+  en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+  ar: ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"],
+};
+const monthLabel = (lang) => MONTHS[lang][Number(CUR_MONTH.slice(5, 7)) - 1];
 
 function StatusPill({ v, lang }) {
   const m = F.VEHICLE_STATUS_META[v.status];
@@ -177,7 +182,7 @@ export function FleetDashboard({ onOpenVehicle }) {
       </div>
 
       <div className="panel" style={{ marginTop: 18 }}>
-        <div className="panel-head"><div><div className="title">{t.efficiency}</div><div className="meta">{lang === "ar" ? "متوسط الاستهلاك والتكلفة لكل مركبة (مايو)" : "Avg consumption & cost per vehicle (May)"}</div></div></div>
+        <div className="panel-head"><div><div className="title">{t.efficiency}</div><div className="meta">{lang === "ar" ? `متوسط الاستهلاك والتكلفة لكل مركبة (${monthLabel("ar")})` : `Avg consumption & cost per vehicle (${monthLabel("en")})`}</div></div></div>
         <div className="workload" style={{ paddingTop: 14 }}>
           {eff.map(({ v, e }) => {
             const c = F.vehicleCosts(v, CUR_MONTH);
@@ -213,21 +218,7 @@ function VehiclesList({ vehicles, settings, onOpen }) {
   const t = I18N[lang];
   const scope = role === "manager" ? vehicles : vehicles.filter((v) => v.custodian === currentUserId || true);
   const cols = "1fr 120px 110px 110px 130px 90px";
-
-  const addVehicle = () => {
-    const id = "V-" + Date.now().toString(36);
-    dispatch({
-      type: "ADD_VEHICLE",
-      vehicle: {
-        id, internalNo: null, plate: "", make: "", model: "", type: "pickup", status: "active",
-        project: D.getProjects()[0]?.id || "p1", custodian: "", fuelType: "diesel", odometer: 0,
-        year: "", purchaseDate: "", purchaseValue: 0, currency: "SAR",
-        documents: [], maintenance: [], fuel: [],
-        schedule: { everyKm: 10000, everyMonths: 12, lastServiceKm: 0, lastServiceDate: ISO_TODAY },
-      },
-    });
-    onOpen(id);
-  };
+  const [adding, setAdding] = useState(false);
 
   return (
     <div className="content">
@@ -238,10 +229,11 @@ function VehiclesList({ vehicles, settings, onOpen }) {
         </div>
         {role === "manager" && (
           <div className="actions">
-            <button className="btn btn-primary" onClick={addVehicle}><Icon name="plus" size={13} /> {t.add_vehicle}</button>
+            <button className="btn btn-primary" onClick={() => setAdding(true)}><Icon name="plus" size={13} /> {t.add_vehicle}</button>
           </div>
         )}
       </div>
+      {adding && <VehicleAddModal lang={lang} t={t} dispatch={dispatch} onClose={() => setAdding(false)} onOpen={onOpen} />}
       <div className="list-wrap">
         <div className="list-row header" style={{ gridTemplateColumns: cols }}>
           <span>{t.vehicle}</span><span>{t.project}</span><span>{t.custodian}</span><span>{t.odometer}</span><span>{t.next_service}</span><span>{t.filter_status}</span>
@@ -276,6 +268,58 @@ function VehiclesList({ vehicles, settings, onOpen }) {
   );
 }
 
+/* ----- Add a vehicle (proper form, no blank-stub records) ----- */
+function VehicleAddModal({ lang, t, dispatch, onClose, onOpen }) {
+  const [s, setS] = useState({ plate: "", make: "", model: "", type: "pickup", fuelType: "diesel", year: "", odometer: 0, project: D.getProjects()[0]?.id || "p1", custodian: "" });
+  const set = (k, val) => setS((p) => ({ ...p, [k]: val }));
+  const save = () => {
+    if (!s.plate.trim() && !s.make.trim()) return;
+    const id = "V-" + Date.now().toString(36);
+    dispatch({
+      type: "ADD_VEHICLE",
+      vehicle: {
+        id, internalNo: null, plate: s.plate.trim(), make: s.make.trim(), model: s.model.trim(),
+        type: s.type, status: "active", project: s.project, custodian: s.custodian, fuelType: s.fuelType,
+        odometer: Number(s.odometer) || 0, year: s.year, purchaseDate: "", purchaseValue: 0, currency: "SAR",
+        documents: [], maintenance: [], fuel: [],
+        schedule: { everyKm: 10000, everyMonths: 12, lastServiceKm: Number(s.odometer) || 0, lastServiceDate: ISO_TODAY },
+      },
+    });
+    onClose();
+    onOpen(id);
+  };
+  return (
+    <div className="modal-mask" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="modal-head"><div className="h">{t.add_vehicle}</div><button className="close icon-btn" onClick={onClose} aria-label={t.cancel}><Icon name="x" size={16} /></button></div>
+        <div className="modal-body">
+          <div className="qf-row">
+            <label className="qf-cell"><span className="qf-label">{t.plate}</span><input className="qf" dir="auto" value={s.plate} onChange={(e) => set("plate", e.target.value)} autoFocus /></label>
+            <label className="qf-cell"><span className="qf-label">{t.fuel_type}</span><select className="qf" value={s.fuelType} onChange={(e) => set("fuelType", e.target.value)}><option value="diesel">{lang === "ar" ? "ديزل" : "Diesel"}</option><option value="petrol">{lang === "ar" ? "بنزين" : "Petrol"}</option></select></label>
+          </div>
+          <div className="qf-row">
+            <label className="qf-cell"><span className="qf-label">{t.make}</span><input className="qf" dir="auto" value={s.make} onChange={(e) => set("make", e.target.value)} placeholder="Toyota / Isuzu…" /></label>
+            <label className="qf-cell"><span className="qf-label">{t.model}</span><input className="qf" dir="auto" value={s.model} onChange={(e) => set("model", e.target.value)} placeholder="Hilux / D-Max…" /></label>
+          </div>
+          <div className="qf-row">
+            <label className="qf-cell"><span className="qf-label">{t.task_type}</span><select className="qf" value={s.type} onChange={(e) => set("type", e.target.value)}>{Object.keys(F.VEHICLE_TYPE_META).map((k) => <option key={k} value={k}>{F.VEHICLE_TYPE_META[k][lang]}</option>)}</select></label>
+            <label className="qf-cell"><span className="qf-label">{t.year}</span><input className="qf" type="number" dir="ltr" value={s.year} onChange={(e) => set("year", e.target.value)} /></label>
+          </div>
+          <div className="qf-row">
+            <label className="qf-cell"><span className="qf-label">{t.project}</span><select className="qf" value={s.project} onChange={(e) => set("project", e.target.value)}>{D.getProjects().map((p) => <option key={p.id} value={p.id}>{D.projectName(p, lang)}</option>)}</select></label>
+            <label className="qf-cell"><span className="qf-label">{t.custodian}</span><select className="qf" value={s.custodian} onChange={(e) => set("custodian", e.target.value)}><option value="">—</option>{D.getUsers().map((u) => <option key={u.id} value={u.id}>{D.userName(u, lang)}</option>)}</select></label>
+          </div>
+          <label className="qf-cell"><span className="qf-label">{t.odometer} ({t.km})</span><input className="qf" type="number" dir="ltr" value={s.odometer} onChange={(e) => set("odometer", e.target.value)} /></label>
+        </div>
+        <div className="modal-foot" style={{ justifyContent: "flex-end" }}>
+          <button className="btn btn-ghost" onClick={onClose}>{t.cancel}</button>
+          <button className="btn btn-primary" onClick={save}><Icon name="check" size={13} /> {t.add_vehicle}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ----- Vehicle profile ----- */
 function VehicleProfile({ vehicle: v, onBack }) {
   const { settings, dispatch, maintenance } = useStore();
@@ -290,6 +334,16 @@ function VehicleProfile({ vehicle: v, onBack }) {
   const cost = F.vehicleCosts(v, CUR_MONTH);
   const [form, setForm] = useState(null); // "fuel" | "maint" | "doc" | "issue"
   const [maintEdit, setMaintEdit] = useState(null); // embedded maintenance entry being edited
+  const [menu, setMenu] = useState(false);
+
+  // What needs attention now, surfaced at the top so the urgent answer comes first.
+  const docStates = (v.documents || []).map((d) => ({ d, ...F.docExpiryState(d.expires) }));
+  const alerts = [];
+  if (svc.state === "overdue") alerts.push({ tone: "urgent", icon: "wrench", text: t.service_overdue });
+  else if (svc.state !== "ok") alerts.push({ tone: "high", icon: "wrench", text: t.service_due });
+  docStates.filter((x) => x.state === "expired").forEach((x) => alerts.push({ tone: "urgent", icon: "shield", text: `${F.docKindLabel(x.d.kind, lang)} · ${t.expired}` }));
+  docStates.filter((x) => x.state === "soon").forEach((x) => alerts.push({ tone: "high", icon: "shield", text: `${F.docKindLabel(x.d.kind, lang)} · ${x.days}${t.days}` }));
+  if (v.status === "in_shop") alerts.push({ tone: "high", icon: "car", text: F.VEHICLE_STATUS_META.in_shop[lang] });
 
   return (
     <div className="content">
@@ -309,19 +363,45 @@ function VehicleProfile({ vehicle: v, onBack }) {
             <span className="mono">{v.odometer.toLocaleString()} {t.km}</span>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {isManager && <button className="btn btn-secondary" onClick={() => setForm(form === "edit" ? null : "edit")}><Icon name="settings" size={13} /> {t.edit_details}</button>}
-          {isManager && <button className="btn btn-secondary" onClick={() => setForm(form === "fuel" ? null : "fuel")}><Icon name="fuel" size={13} /> {t.log_fuel}</button>}
-          {isManager && <button className="btn btn-secondary" onClick={() => setForm(form === "maint" ? null : "maint")}><Icon name="wrench" size={13} /> {t.add_maintenance}</button>}
-          {isManager && <button className="btn btn-secondary" onClick={() => setForm(form === "assign" ? null : "assign")}><Icon name="pin" size={13} /> {t.reassign}</button>}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
           <button className="btn btn-primary" onClick={() => setForm(form === "issue" ? null : "issue")}><Icon name="bell" size={13} /> {t.report_issue}</button>
+          {isManager && <button className="btn btn-secondary" onClick={() => setForm(form === "fuel" ? null : "fuel")}><Icon name="fuel" size={13} /> {t.log_fuel}</button>}
           {isManager && (
-            <button className="btn btn-danger" onClick={() => { if (window.confirm(`${t.delete}: ${F.vehicleLabel(v)} (${v.plate})?`)) { dispatch({ type: "DELETE_VEHICLE", id: v.id }); onBack(); } }}>
-              <Icon name="trash" size={13} /> {t.delete}
-            </button>
+            <div style={{ position: "relative" }}>
+              <button className="btn btn-secondary" onClick={() => setMenu((m) => !m)} aria-haspopup="true" aria-expanded={menu}>
+                <Icon name="more" size={14} /> {lang === "ar" ? "المزيد" : "More"}
+              </button>
+              {menu && (
+                <div className="popover" style={{ top: "calc(100% + 6px)", insetInlineEnd: 0, minWidth: 210 }} onMouseLeave={() => setMenu(false)}>
+                  <button className="pop-item" onClick={() => { setMenu(false); setForm("edit"); }}><Icon name="settings" size={15} /> {t.edit_details}</button>
+                  <button className="pop-item" onClick={() => { setMenu(false); setForm("maint"); }}><Icon name="wrench" size={15} /> {t.add_maintenance}</button>
+                  <button className="pop-item" onClick={() => { setMenu(false); setForm("assign"); }}><Icon name="pin" size={15} /> {t.reassign}</button>
+                  <hr />
+                  <button className="pop-item" style={{ color: "var(--hue-urgent)" }} onClick={() => { setMenu(false); if (window.confirm(`${t.delete}: ${F.vehicleLabel(v)} (${v.plate})?`)) { dispatch({ type: "DELETE_VEHICLE", id: v.id }); onBack(); } }}><Icon name="trash" size={15} /> {t.delete}</button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
+
+      {/* Needs-attention summary: the urgent answer first. */}
+      {alerts.length > 0 ? (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+          {alerts.map((a, i) => {
+            const c = a.tone === "urgent" ? { fg: "var(--hue-urgent)", bg: "var(--hue-urgent-bg)" } : { fg: "var(--hue-high)", bg: "var(--hue-high-bg)" };
+            return (
+              <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: c.fg, background: c.bg, padding: "6px 12px", borderRadius: 999 }} dir="auto">
+                <Icon name={a.icon} size={13} /> {a.text}
+              </span>
+            );
+          })}
+        </div>
+      ) : (
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 500, color: "var(--hue-low)", background: "var(--hue-low-bg)", padding: "6px 12px", borderRadius: 999, marginTop: 14 }}>
+          <Icon name="approve" size={13} /> {t.all_good}
+        </div>
+      )}
 
       {form === "assign" && (
         <AssignEditor
@@ -373,7 +453,7 @@ function VehicleProfile({ vehicle: v, onBack }) {
                 <div className="mono" style={{ fontSize: 12 }}>{t.expires} {d.expires}</div>
                 <div><DocChip state={ex.state} days={ex.days} lang={lang} t={t} />{ex.state === "ok" && <span className="muted" style={{ fontSize: 11 }}>{t.valid_doc}</span>}</div>
                 {isManager ? (
-                  <button className="icon-btn" onClick={() => dispatch({ type: "REMOVE_VEHICLE_DOC", vehicleId: v.id, docId: d.id })} aria-label={t.remove}><Icon name="trash" size={13} /></button>
+                  <button className="icon-btn" onClick={() => { if (window.confirm(lang === "ar" ? "حذف المستند؟" : "Remove this document?")) dispatch({ type: "REMOVE_VEHICLE_DOC", vehicleId: v.id, docId: d.id }); }} aria-label={t.remove}><Icon name="trash" size={13} /></button>
                 ) : <span />}
               </div>
             );
@@ -391,7 +471,7 @@ function VehicleProfile({ vehicle: v, onBack }) {
             const embedded = (v.maintenance || []).map((m) => ({ key: m.id, embedded: true, raw: m, date: m.date, label: F.maintCatLabel(m.category, lang), vendor: m.vendor, note: lang === "ar" ? m.ar_note : m.note, odo: m.odometer, cost: m.cost, currency: m.currency }));
             const fromHub = maintenance.filter((m) => m.targetType === "vehicle" && m.targetId === v.id).map((m) => ({ key: "log:" + m.id, date: m.logDate || m.scheduledDate, label: m.maintenanceType === "preventive" ? t.type_preventive : t.type_corrective, vendor: m.vendorName || "", note: m.description, odo: m.meterReading, cost: m.cost, currency: "SAR", pending: m.status !== "completed" }));
             const all = [...embedded, ...fromHub].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-            if (!all.length) return <div className="empty">{t.none_due}</div>;
+            if (!all.length) return <div className="empty">{lang === "ar" ? "لا توجد سجلات صيانة بعد. أضِف صيانة من زر «المزيد» بالأعلى." : "No maintenance records yet. Add one from the More menu above."}</div>;
             return all.map((m) => (
               <div className="list-row" key={m.key} style={{ gridTemplateColumns: "100px 1fr 90px 80px auto", cursor: "default", alignItems: "center" }}>
                 <div className="mono" style={{ fontSize: 12 }}>{m.date || "—"}</div>
@@ -425,7 +505,7 @@ function VehicleProfile({ vehicle: v, onBack }) {
               <div className="mono" style={{ fontWeight: 600 }}>{D.fmtMoney(f.cost, f.currency)}</div>
             </div>
           ))}
-          {(v.fuel || []).length === 0 && <div className="empty">—</div>}
+          {(v.fuel || []).length === 0 && <div className="empty">{lang === "ar" ? "لا توجد تعبئات وقود بعد." : "No fuel logs yet."}</div>}
         </div>
       </div>
     </div>

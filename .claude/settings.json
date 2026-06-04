@@ -39,7 +39,15 @@
       "Bash(git remote *)",
       "Bash(git push *)",
       "Bash(rm -f src/mobile/MobileApp.jsx)",
-      "Bash(rmdir src/mobile)"
+      "Bash(rmdir src/mobile)",
+      "Bash(npx --yes impeccable skills install)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(npx --yes impeccable --help)",
+      "Bash(npx --yes impeccable skills --help)",
+      "Bash(node .claude/skills/impeccable/scripts/context.mjs)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('.impeccable/design.json','utf8'\\)\\); console.log\\('design.json OK'\\)\")",
+      "Bash(node .claude/skills/impeccable/scripts/critique-storage.mjs slug \"src/screens/Fleet.jsx\")",
+      "Bash(node .claude/skills/impeccable/scripts/detect.mjs --json src/screens/Fleet.jsx)"
     ]
   }
 }
