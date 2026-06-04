@@ -28,7 +28,7 @@ function fmtBytes(n) {
 /* Documents / attachments — click-to-pick + drag-and-drop upload.
    Blobs persist in IndexedDB (survive reload / offline); object URLs are
    resolved per session and revoked on unmount. */
-export default function DocumentsSection({ task, lang, t, currentUserId, dispatch }) {
+export default function DocumentsSection({ task, lang, t, currentUserId, dispatch, bare }) {
   const [drag, setDrag] = useState(false);
   const [urls, setUrls] = useState({}); // attachment id -> objectURL
   const inputRef = useRef(null);
@@ -89,10 +89,12 @@ export default function DocumentsSection({ task, lang, t, currentUserId, dispatc
 
   return (
     <div>
-      <div className="section-title">
-        {t.documents}
-        {files.length > 0 && <span className="muted mono" style={{ fontSize: 11 }}> · {files.length}</span>}
-      </div>
+      {!bare && (
+        <div className="section-title">
+          {t.documents}
+          {files.length > 0 && <span className="muted mono" style={{ fontSize: 11 }}> · {files.length}</span>}
+        </div>
+      )}
       <div className="docs">
         {files.map((f) => {
           const who = D.findUser(f.who);

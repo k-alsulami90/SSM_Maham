@@ -9,6 +9,22 @@ import { I18N } from "../data/i18n.js";
 import { useStore } from "../store/AppStore.jsx";
 import { useTaskActions } from "../store/useTaskActions.js";
 
+/* Collapsible section: keeps the panel minimal by hiding secondary detail
+   (subtasks, documents, quotations) behind a quiet header until needed. */
+function Disclosure({ title, count, defaultOpen = false, children }) {
+  const [o, setO] = useState(defaultOpen);
+  return (
+    <div className="disc">
+      <button type="button" className="disc-head" onClick={() => setO((v) => !v)} aria-expanded={o}>
+        <Icon name={o ? "chev_down" : "chev_right"} size={14} style={{ color: "var(--ink-400)" }} />
+        <span>{title}</span>
+        {count != null && <span className="disc-count">{count}</span>}
+      </button>
+      {o && <div className="disc-body">{children}</div>}
+    </div>
+  );
+}
+
 /* Task detail drawer — fields, type-aware actions, quotations/docs,
    subtasks, activity + composer. Reads the live task from the store. */
 export default function DetailDrawer({ taskId, lang, onClose }) {
@@ -159,110 +175,74 @@ export default function DetailDrawer({ taskId, lang, onClose }) {
         {/* The next action is the focal point */}
         {(mAct || mgrAct) && <div className="task-actions">{mAct}{mgrAct}</div>}
 
-        {/* Facts: assignee · due · priority · cost · repeats */}
-        <div className="task-facts">
-          <span className="fact">
+        {/* One-line facts: assignee · due · priority · cost · repeats */}
+        <div className="task-line">
+          <span className="who-inline">
+            <Avatar user={u} size={16} />
             {role === "manager" ? (
-              <>
-                <Avatar user={u} size={18} />
-                <select
-                  className="fact-select"
-                  aria-label={t.assignee}
-                  value={task.assignee || ""}
-                  onChange={(e) => dispatch({ type: "UPDATE_TASK", id: task.id, patch: { assignee: e.target.value } })}
-                >
-                  <option value="">—</option>
-                  {D.getUsers().map((x) => <option key={x.id} value={x.id}>{D.userName(x, lang)}</option>)}
-                </select>
-              </>
-            ) : (
-              <><Avatar user={u} size={18} /> {D.userName(u, lang)}</>
-            )}
+              <select className="fact-select" aria-label={t.assignee} value={task.assignee || ""} onChange={(e) => dispatch({ type: "UPDATE_TASK", id: task.id, patch: { assignee: e.target.value } })}>
+                <option value="">—</option>
+                {D.getUsers().map((x) => <option key={x.id} value={x.id}>{D.userName(x, lang)}</option>)}
+              </select>
+            ) : D.userName(u, lang)}
           </span>
-
-          <span className={`fact ${overdue ? "fact-urgent" : ""}`}>
-            <Icon name="calendar" size={13} style={{ color: overdue ? "var(--hue-urgent)" : "var(--ink-400)" }} /> {D.dueLabel(task.due, lang)}
-          </span>
-
-          <span className="fact"><PriorityTag p={task.priority} lang={lang} /></span>
-
-          <span className="fact">
-            <Icon name="activity" size={13} style={{ color: "var(--ink-400)" }} />
+          <span className="sep">·</span>
+          <span className={overdue ? "fact-urgent" : ""}>{D.dueLabel(task.due, lang)}</span>
+          <span className="sep">·</span>
+          <span>{D.priorityLabel(task.priority, lang)}</span>
+          <span className="sep">·</span>
+          <span>
             {costEdit !== null ? (
               <span style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
-                <input type="number" autoFocus value={costEdit} onChange={(e) => setCostEdit(e.target.value)} style={{ width: 80, padding: "2px 6px", border: "1px solid var(--line)", borderRadius: 6, background: "var(--bg-elev)" }} />
+                <input type="number" autoFocus value={costEdit} onChange={(e) => setCostEdit(e.target.value)} style={{ width: 78, padding: "2px 6px", border: "1px solid var(--line)", borderRadius: 6, background: "var(--bg-elev)" }} />
                 <span className="muted">SAR</span>
                 <button className="btn btn-primary" style={{ padding: "2px 7px", fontSize: 12 }} onClick={() => { dispatch({ type: "UPDATE_TASK", id: task.id, patch: { cost: Number(costEdit) || 0 } }); setCostEdit(null); }}><Icon name="check" size={11} /></button>
               </span>
             ) : (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                <span className="mono">{task.cost ? D.fmtMoney(task.cost) : "—"}</span>
+                {task.cost ? <span className="mono">{D.fmtMoney(task.cost)}</span> : <span className="muted">{lang === "ar" ? "بلا تكلفة" : "no cost"}</span>}
                 {canEditCost && <button className="btn btn-ghost" style={{ padding: "1px 6px", fontSize: 11 }} onClick={() => setCostEdit(String(task.cost || ""))}>{task.cost ? t.edit : t.add}</button>}
               </span>
             )}
           </span>
-
           {template && (
-            <span className="fact">
-              <Icon name="repeat" size={13} style={{ color: "var(--ink-400)" }} /> {D.recurrenceLabel(template.recurrence, lang)}
-              <span className="muted" style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><Icon name="flame" size={12} /> {D.computeStreak(template.history, template.recurrence.freq)}</span>
-            </span>
+            <>
+              <span className="sep">·</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="repeat" size={12} style={{ color: "var(--ink-400)" }} /> {D.recurrenceLabel(template.recurrence, lang)} <span className="muted" style={{ display: "inline-flex", alignItems: "center", gap: 2 }}><Icon name="flame" size={11} /> {D.computeStreak(template.history, template.recurrence.freq)}</span></span>
+            </>
           )}
         </div>
 
-        {/* Manager-only: archive / delete, de-emphasized */}
-        {role === "manager" && (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-            {task.status === "done" && (
-              <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => dispatch({ type: "UPDATE_TASK", id: task.id, patch: { archived: !task.archived } })}>
-                <Icon name={task.archived ? "arrow_up" : "check"} size={12} /> {task.archived ? t.unarchive : t.archive}
-              </button>
-            )}
-            <button className="btn btn-ghost" style={{ fontSize: 12, color: "var(--hue-urgent)", marginInlineStart: "auto" }} onClick={() => { if (window.confirm(`${t.delete}: ${D.taskTitle(task, lang)}?`)) { dispatch({ type: "DELETE_TASK", id: task.id }); onClose(); } }}>
-              <Icon name="trash" size={12} /> {t.delete}
-            </button>
-          </div>
-        )}
-
-        <div>
-          <div className="section-title" style={{ display: "flex", alignItems: "center" }}>
-            <span>{t.description}</span>
-            {role === "manager" && descEdit === null && (
-              <button className="btn btn-ghost" style={{ marginInlineStart: "auto", padding: "1px 6px", fontSize: 11 }} onClick={() => setDescEdit(D.taskDesc(task, lang) || "")}>{t.edit}</button>
-            )}
-          </div>
-          {descEdit !== null ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <textarea dir="auto" rows={3} value={descEdit} onChange={(e) => setDescEdit(e.target.value)} style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "8px 10px", fontSize: 13, background: "var(--bg-elev)", resize: "vertical" }} />
-              <div style={{ display: "flex", gap: 6 }}>
-                <button className="btn btn-primary" onClick={() => { dispatch({ type: "UPDATE_TASK", id: task.id, patch: { desc: descEdit.trim(), ar_desc: descEdit.trim() } }); setDescEdit(null); }}><Icon name="check" size={12} /> {t.save}</button>
-                <button className="btn btn-ghost" onClick={() => setDescEdit(null)}>{t.cancel}</button>
-              </div>
+        {/* Description = the content. Manager taps the text to edit. */}
+        {descEdit !== null ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <textarea dir="auto" autoFocus rows={3} value={descEdit} onChange={(e) => setDescEdit(e.target.value)} style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "8px 10px", fontSize: 13.5, background: "var(--bg-elev)", resize: "vertical", lineHeight: 1.55 }} />
+            <div style={{ display: "flex", gap: 6 }}>
+              <button className="btn btn-primary" onClick={() => { dispatch({ type: "UPDATE_TASK", id: task.id, patch: { desc: descEdit.trim(), ar_desc: descEdit.trim() } }); setDescEdit(null); }}><Icon name="check" size={12} /> {t.save}</button>
+              <button className="btn btn-ghost" onClick={() => setDescEdit(null)}>{t.cancel}</button>
             </div>
-          ) : (
-            <div className="desc-block">{D.taskDesc(task, lang) || <span className="muted">—</span>}</div>
-          )}
-        </div>
+          </div>
+        ) : (D.taskDesc(task, lang) || role === "manager") ? (
+          <div
+            className="task-desc"
+            onClick={role === "manager" ? () => setDescEdit(D.taskDesc(task, lang) || "") : undefined}
+            style={{ cursor: role === "manager" ? "text" : "default" }}
+            title={role === "manager" ? t.edit : undefined}
+          >
+            {D.taskDesc(task, lang) || <span className="muted">{lang === "ar" ? "أضِف وصفًا…" : "Add a description…"}</span>}
+          </div>
+        ) : null}
 
+        {/* Secondary detail — collapsed by default to keep the panel minimal */}
         {type === "procurement" && (
-          <QuotationsSection task={task} lang={lang} t={t} role={role} me={me} dispatch={dispatch} />
+          <Disclosure title={lang === "ar" ? "عروض الأسعار" : "Quotations"} count={(task.quotations || []).length || null} defaultOpen>
+            <QuotationsSection task={task} lang={lang} t={t} role={role} me={me} dispatch={dispatch} bare />
+          </Disclosure>
         )}
-        {/* Documents (incl. invoices) on every task */}
-        <DocumentsSection task={task} lang={lang} t={t} currentUserId={me} dispatch={dispatch} />
 
-        <div>
-          <div className="section-title">
-            {t.subtasks}
-            {task.subtasks?.length > 0 && (
-              <span className="muted mono" style={{ fontSize: 11 }}>
-                {" "}· {task.subtasks.filter((s) => s.done).length}/{task.subtasks.length}
-              </span>
-            )}
-          </div>
+        <Disclosure title={t.subtasks} count={task.subtasks?.length ? `${task.subtasks.filter((s) => s.done).length}/${task.subtasks.length}` : null}>
           {task.subtasks?.length > 0 && (
-            <div className="subtask-progress">
-              <div className="fill" style={{ width: `${(task.subtasks.filter((s) => s.done).length / task.subtasks.length) * 100}%` }} />
-            </div>
+            <div className="subtask-progress"><div className="fill" style={{ width: `${(task.subtasks.filter((s) => s.done).length / task.subtasks.length) * 100}%` }} /></div>
           )}
           <div className="subtasks">
             {(task.subtasks || []).map((s) => (
@@ -276,7 +256,11 @@ export default function DetailDrawer({ taskId, lang, onClose }) {
               <input dir="auto" value={newSub} onChange={(e) => setNewSub(e.target.value)} placeholder={t.add_subtask} style={{ border: 0, background: "transparent", outline: "none", flex: 1, fontSize: 13 }} />
             </form>
           </div>
-        </div>
+        </Disclosure>
+
+        <Disclosure title={t.documents} count={(task.attachments || []).length || null}>
+          <DocumentsSection task={task} lang={lang} t={t} currentUserId={me} dispatch={dispatch} bare />
+        </Disclosure>
 
         <div>
           <div className="section-title">{t.discussion}</div>
@@ -322,6 +306,20 @@ export default function DetailDrawer({ taskId, lang, onClose }) {
             <button className="btn btn-primary send" onClick={sendComment} disabled={!comment.trim()}><Icon name="send" size={12} /> {t.send}</button>
           </div>
         </div>
+
+        {/* Manager-only maintenance, kept quiet at the very bottom */}
+        {role === "manager" && (
+          <div className="task-foot">
+            {task.status === "done" && (
+              <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => dispatch({ type: "UPDATE_TASK", id: task.id, patch: { archived: !task.archived } })}>
+                <Icon name={task.archived ? "arrow_up" : "check"} size={12} /> {task.archived ? t.unarchive : t.archive}
+              </button>
+            )}
+            <button className="btn btn-ghost" style={{ fontSize: 12, color: "var(--hue-urgent)", marginInlineStart: "auto" }} onClick={() => { if (window.confirm(`${t.delete}: ${D.taskTitle(task, lang)}?`)) { dispatch({ type: "DELETE_TASK", id: task.id }); onClose(); } }}>
+              <Icon name="trash" size={12} /> {t.delete}
+            </button>
+          </div>
+        )}
       </div>
     </aside>
   );

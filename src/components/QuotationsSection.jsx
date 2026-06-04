@@ -6,7 +6,7 @@ import { useTaskActions } from "../store/useTaskActions.js";
 /* Quotation comparison + capture for procurement tasks.
    - Member (owner, before a pick): add / remove quotes, flag a recommendation.
    - Manager (task in review, nothing picked yet): compare side-by-side and select. */
-export default function QuotationsSection({ task, lang, t, role, me, dispatch }) {
+export default function QuotationsSection({ task, lang, t, role, me, dispatch, bare }) {
   const { selectQuotation } = useTaskActions();
   const quotes = task.quotations || [];
   const canEdit = role === "member" && task.assignee === me && task.status !== "done" && !task.selectedQuotationId;
@@ -40,13 +40,15 @@ export default function QuotationsSection({ task, lang, t, role, me, dispatch })
 
   return (
     <div>
-      <div className="section-title">
-        {t.quotations}
-        {quotes.length > 0 && <span className="muted mono" style={{ fontSize: 11 }}> · {quotes.length}</span>}
-        {task.selectedQuotationId && (
-          <span className="muted" style={{ fontSize: 11, color: "var(--acc-forest)" }}> · {t.proceeding}</span>
-        )}
-      </div>
+      {!bare && (
+        <div className="section-title">
+          {t.quotations}
+          {quotes.length > 0 && <span className="muted mono" style={{ fontSize: 11 }}> · {quotes.length}</span>}
+          {task.selectedQuotationId && (
+            <span className="muted" style={{ fontSize: 11, color: "var(--acc-forest)" }}> · {t.proceeding}</span>
+          )}
+        </div>
+      )}
 
       <div className="quotes">
         {quotes.length === 0 && <div className="empty" style={{ padding: "18px 10px" }}>{t.no_quotations}</div>}
