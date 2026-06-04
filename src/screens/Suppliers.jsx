@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Icon from "../components/Icon.jsx";
 import SupplierRatingModal, { Stars } from "../components/SupplierRatingModal.jsx";
+import EmptyState from "../components/EmptyState.jsx";
 import * as D from "../data/mock.js";
 import { I18N } from "../data/i18n.js";
 import { useStore } from "../store/AppStore.jsx";
@@ -66,7 +67,15 @@ export default function Suppliers() {
         </div>
       </div>
 
-      {sorted.length === 0 && <div className="list-wrap"><div className="empty">{lang === "ar" ? "لا يوجد موردون بعد" : "No suppliers yet"}</div></div>}
+      {sorted.length === 0 && (
+        <EmptyState
+          icon="team"
+          title={lang === "ar" ? "لا يوجد موردون بعد" : "No suppliers yet"}
+          hint={lang === "ar" ? "أضِف الموردين وورش الصيانة، وقيّمهم بعد كل عمل لتتبّع الأفضل." : "Add your vendors and workshops, then rate them after each job to track who performs best."}
+          actionLabel={t.new_supplier}
+          onAction={() => setEditing({ ...BLANK })}
+        />
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
         {sorted.map((s) => (

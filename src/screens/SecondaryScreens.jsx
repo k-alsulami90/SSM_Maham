@@ -2,6 +2,7 @@ import Icon from "../components/Icon.jsx";
 import Avatar from "../components/Avatar.jsx";
 import { WorkloadBar } from "../components/DashWidgets.jsx";
 import { PriorityTag, StatusPill } from "../components/Tags.jsx";
+import EmptyState from "../components/EmptyState.jsx";
 import * as D from "../data/mock.js";
 import { I18N } from "../data/i18n.js";
 import { useStore } from "../store/AppStore.jsx";
@@ -57,7 +58,9 @@ export function Approvals({ onOpen }) {
               </div>
             );
           })}
-          {review.length === 0 && <div className="empty">{t.nothing_review}</div>}
+          {review.length === 0 && (
+            <EmptyState icon="approve" title={lang === "ar" ? "لا شيء بانتظار الاعتماد" : "Nothing to approve"} hint={lang === "ar" ? "عندما يرفع أحد أعضاء الفريق عملًا للمراجعة، سيظهر هنا." : "When a team member submits work for review, it appears here."} />
+          )}
         </div>
       </div>
     </div>
@@ -122,7 +125,15 @@ export function RecurringDuties({ onOpen, onCreate }) {
             </div>
           );
         })}
-        {visible.length === 0 && <div className="empty">{t.no_tasks}</div>}
+        {visible.length === 0 && (
+          <EmptyState
+            icon="repeat"
+            title={lang === "ar" ? "لا مهام متكررة بعد" : "No recurring duties yet"}
+            hint={lang === "ar" ? "أنشئ المهام اليومية والأسبوعية والشهرية المتكررة، وتابع سلسلة الإنجاز." : "Set up daily, weekly and monthly recurring duties and track the completion streak."}
+            actionLabel={role === "manager" ? t.new_recurring : undefined}
+            onAction={role === "manager" ? onCreate : undefined}
+          />
+        )}
       </div>
     </div>
   );
@@ -247,7 +258,9 @@ export function Inbox({ onOpen }) {
             </div>
           );
         })}
-        {mine.length === 0 && <div className="empty">{t.no_tasks}</div>}
+        {mine.length === 0 && (
+          <EmptyState icon="inbox" title={lang === "ar" ? "صندوقك خالٍ" : "Your inbox is clear"} hint={lang === "ar" ? "المهام التي تحتاج انتباهك ستظهر هنا." : "Tasks that need your attention will show up here."} />
+        )}
       </div>
     </div>
   );

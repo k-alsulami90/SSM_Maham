@@ -1655,6 +1655,19 @@ select.qf {
   @keyframes pop-fade  { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 }
 
+/* ====== Empty states (onboarding) ====== */
+.empty-state {
+  padding: 44px 24px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+}
+.empty-state-ic {
+  width: 48px; height: 48px; border-radius: 14px;
+  background: var(--bg-sand); color: var(--ink-400);
+  display: grid; place-items: center; margin-bottom: 8px;
+}
+.empty-state-title { font-size: 15px; font-weight: 600; color: var(--ink-900); }
+.empty-state-hint { font-size: 13px; color: var(--ink-500); max-width: 380px; line-height: 1.55; }
+
 /* ====== Harden: text overflow (long / unbroken / RTL strings) ====== */
 .list-row > * { min-width: 0; }
 .ttl, .drawer-head .tt, .card .title, .queue-item .title, .metric .value, .panel-head .title { overflow-wrap: anywhere; }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import Icon from "../components/Icon.jsx";
 import { MetricCard } from "../components/DashWidgets.jsx";
 import SupplierRatingModal from "../components/SupplierRatingModal.jsx";
+import EmptyState from "../components/EmptyState.jsx";
 import * as D from "../data/mock.js";
 import * as F from "../data/fleet.js";
 import * as A from "../data/assets.js";
@@ -191,7 +192,15 @@ export default function Maintenance() {
       </div>
 
       <div className="list-wrap" style={{ marginTop: 12 }}>
-        {list.length === 0 && <div className="empty">{lang === "ar" ? "لا توجد سجلات" : "No records"}</div>}
+        {list.length === 0 && (
+          <EmptyState
+            icon="wrench"
+            title={view === "upcoming" ? (lang === "ar" ? "لا صيانة قادمة" : "No upcoming maintenance") : (lang === "ar" ? "لا سجلات صيانة بعد" : "No maintenance records yet")}
+            hint={lang === "ar" ? "سجّل صيانة المركبات والمعدات والمرافق هنا في مكان واحد." : "Log maintenance for vehicles, equipment and facilities here in one place."}
+            actionLabel={t.new_maintenance}
+            onAction={() => setEditing(blankLog())}
+          />
+        )}
         {list.map((m) => {
           const tone = STATUS_TONE[m.status] || STATUS_TONE.scheduled;
           const od = m.status !== "completed" && m.scheduledDate && D.daysUntil(m.scheduledDate) < 0;

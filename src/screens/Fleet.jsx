@@ -8,6 +8,7 @@ import { I18N } from "../data/i18n.js";
 import { useStore } from "../store/AppStore.jsx";
 import { useToast } from "../components/Toast.jsx";
 import AssignEditor from "../components/AssignEditor.jsx";
+import EmptyState from "../components/EmptyState.jsx";
 
 const CUR_MONTH = D.TODAY.toISOString().slice(0, 10).slice(0, 7);
 const ISO_TODAY = D.TODAY.toISOString().slice(0, 10);
@@ -262,7 +263,15 @@ function VehiclesList({ vehicles, settings, onOpen }) {
             </div>
           );
         })}
-        {scope.length === 0 && <div className="empty">{t.no_vehicles}</div>}
+        {scope.length === 0 && (
+          <EmptyState
+            icon="car"
+            title={lang === "ar" ? "لا مركبات بعد" : "No vehicles yet"}
+            hint={lang === "ar" ? "أضِف مركبات الأسطول لتتبّع الوقود والمستندات والصيانة لكل مركبة." : "Add fleet vehicles to track fuel, documents and maintenance for each one."}
+            actionLabel={role === "manager" ? t.add_vehicle : undefined}
+            onAction={role === "manager" ? () => setAdding(true) : undefined}
+          />
+        )}
       </div>
     </div>
   );

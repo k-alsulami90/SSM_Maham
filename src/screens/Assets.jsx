@@ -9,6 +9,7 @@ import { I18N } from "../data/i18n.js";
 import { useStore } from "../store/AppStore.jsx";
 import { useToast } from "../components/Toast.jsx";
 import AssignEditor from "../components/AssignEditor.jsx";
+import EmptyState from "../components/EmptyState.jsx";
 
 const ISO_TODAY = D.TODAY.toISOString().slice(0, 10);
 const catIcon = (cat) => (cat === "vehicle" ? "car" : A.ASSET_CATEGORY_META[cat]?.icon || "box");
@@ -279,7 +280,15 @@ export function AssetRegister({ onOpenVehicle, onOpenAsset, onNav }) {
               </div>
             );
           })}
-          {rows.length === 0 && <div className="list-wrap"><div className="empty">{t.no_assets}</div></div>}
+          {rows.length === 0 && (
+            <EmptyState
+              icon="box"
+              title={lang === "ar" ? "لا أصول بعد" : "No assets yet"}
+              hint={lang === "ar" ? "سجّل الأجهزة والمعدات والأثاث، فرديًا بسجل أو بالكمية، وتابعها حسب الموقع." : "Register equipment, machinery and furniture, individually or in bulk, and track them by location."}
+              actionLabel={role === "manager" ? t.add_asset : undefined}
+              onAction={role === "manager" ? () => setAdding(true) : undefined}
+            />
+          )}
         </div>
       )}
 

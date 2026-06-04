@@ -3,6 +3,7 @@ import Icon from "../components/Icon.jsx";
 import FilterBar from "../components/FilterBar.jsx";
 import Kanban from "../components/Kanban.jsx";
 import ListView from "../components/ListView.jsx";
+import EmptyState from "../components/EmptyState.jsx";
 import * as D from "../data/mock.js";
 import { I18N } from "../data/i18n.js";
 import { useStore } from "../store/AppStore.jsx";
@@ -77,7 +78,17 @@ export default function TaskHub({ onOpen, openId, onCreate, defaultView = "kanba
 
       <FilterBar lang={lang} view={view} setView={setView} filters={filters} setFilters={setFilters} />
 
-      {view === "kanban" ? (
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon="hub"
+          title={showArchived ? (lang === "ar" ? "لا مهام مؤرشفة" : "Nothing archived") : (lang === "ar" ? "لا مهام بعد" : "No tasks yet")}
+          hint={role === "manager"
+            ? (lang === "ar" ? "أنشئ أول مهمة لفريقك، وستظهر هنا على اللوحة." : "Create the first task for your team; it shows up here on the board.")
+            : (lang === "ar" ? "ستظهر المهام المُسنَدة إليك هنا." : "Tasks assigned to you will appear here.")}
+          actionLabel={role === "manager" && !showArchived ? t.new_task : undefined}
+          onAction={role === "manager" && !showArchived ? onCreate : undefined}
+        />
+      ) : view === "kanban" ? (
         <Kanban tasks={filtered} lang={lang} onOpen={onOpen} selectedId={openId} onMove={onMove} onCreate={onCreate} />
       ) : (
         <ListView tasks={filtered} lang={lang} onOpen={onOpen} selectedId={openId} />

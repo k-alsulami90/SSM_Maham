@@ -3,6 +3,7 @@ import Avatar from "../components/Avatar.jsx";
 import TaskCard from "../components/TaskCard.jsx";
 import { PriorityTag, StatusPill } from "../components/Tags.jsx";
 import { MemberMetric } from "../components/DashWidgets.jsx";
+import EmptyState from "../components/EmptyState.jsx";
 import * as D from "../data/mock.js";
 import { I18N } from "../data/i18n.js";
 import { useStore } from "../store/AppStore.jsx";
@@ -40,7 +41,7 @@ export default function MemberDashboard({ onOpen, openId, onCreate, onNav }) {
 
       <h3 className="section-title" style={{ margin: "8px 0 10px", fontSize: 12 }}>{t.today_focus}</h3>
       {inProg.length + backlog.length === 0 ? (
-        <div className="list-wrap"><div className="empty">{t.no_tasks}</div></div>
+        <EmptyState icon="tasks" title={lang === "ar" ? "لا مهام لك بعد" : "No tasks yet"} hint={lang === "ar" ? "عندما يُسنِد إليك المدير عملاً، سيظهر هنا مع موعده وأولويته." : "When your manager assigns work to you, it appears here with its due date and priority."} />
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10, marginBottom: 18 }}>
           {[...inProg, ...backlog].slice(0, 4).map((tk) => (
