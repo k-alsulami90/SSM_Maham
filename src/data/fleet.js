@@ -47,10 +47,21 @@ export const RESETS_SCHEDULE = new Set(["service", "oil"]);
 
 // Helper for building a vehicle from the fuel report. Schedule defaults keep
 // "service due" quiet until real intervals are entered in the app.
+// Recover a bill odometer with a data-entry extra digit: while it's far above
+// the car's real reading, drop the last digit (260060 -> 26006).
+function fixOdo(raw, ref) {
+  let n = Number(raw) || 0;
+  while (ref > 0 && n > ref * 1.5 && n >= 100) n = Math.floor(n / 10);
+  return n;
+}
+
 function veh(o) {
   const m = VEHICLE_MAINT[o.id];
   const maintenance = m
-    ? m.entries.map((e, i) => ({ id: `m-${o.id}-${i}`, date: e.date, category: "oil", cost: e.cost, currency: "SAR", vendor: "", note: "تغيير زيت", ar_note: "تغيير زيت" }))
+    ? m.entries.map((e, i) => ({
+        id: `m-${o.id}-${i}`, date: e.date, odometer: fixOdo(e.odo, o.odometer),
+        category: "oil", cost: e.cost, currency: "SAR", vendor: "", note: "تغيير زيت", ar_note: "تغيير زيت",
+      }))
     : [];
   const lastDate = maintenance.length
     ? [...maintenance].sort((a, b) => (a.date < b.date ? 1 : -1))[0].date
@@ -66,6 +77,7 @@ function veh(o) {
     maintenance,
     schedule: { everyKm: m?.everyKm || 10000, everyMonths: m?.everyMonths || 12, lastServiceKm: o.odometer, lastServiceDate: lastDate },
     ...o,
+    plate: m?.plateNo ? `${o.plate} ${m.plateNo}` : o.plate,
   };
 }
 
