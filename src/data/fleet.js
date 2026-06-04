@@ -7,6 +7,7 @@
    ============================================================ */
 import { TODAY, daysUntil, findUser, userName, findProject, projectName } from "./mock.js";
 import { FLEET_SEED } from "./vehicles.data.js";
+import { VEHICLE_MAINT } from "./maintenance.data.js";
 
 export const VEHICLE_TYPE_META = {
   pickup: { en: "Pickup", ar: "بيك أب" },
@@ -47,6 +48,13 @@ export const RESETS_SCHEDULE = new Set(["service", "oil"]);
 // Helper for building a vehicle from the fuel report. Schedule defaults keep
 // "service due" quiet until real intervals are entered in the app.
 function veh(o) {
+  const m = VEHICLE_MAINT[o.id];
+  const maintenance = m
+    ? m.entries.map((e, i) => ({ id: `m-${o.id}-${i}`, date: e.date, category: "oil", cost: e.cost, currency: "SAR", vendor: "", note: "تغيير زيت", ar_note: "تغيير زيت" }))
+    : [];
+  const lastDate = maintenance.length
+    ? [...maintenance].sort((a, b) => (a.date < b.date ? 1 : -1))[0].date
+    : "2026-05-01";
   return {
     status: "active",
     custodian: "",
@@ -55,8 +63,8 @@ function veh(o) {
     purchaseValue: 0,
     currency: "SAR",
     documents: [],
-    maintenance: [],
-    schedule: { everyKm: 10000, everyMonths: 12, lastServiceKm: o.odometer, lastServiceDate: "2026-05-01" },
+    maintenance,
+    schedule: { everyKm: m?.everyKm || 10000, everyMonths: m?.everyMonths || 12, lastServiceKm: o.odometer, lastServiceDate: lastDate },
     ...o,
   };
 }
