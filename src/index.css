@@ -1646,15 +1646,13 @@ select.qf {
   .list-row, .group-row, .queue-item { transition: background-color .14s var(--ease-out); }
   .group-row:hover { background: var(--bg-sand); }
 
-  /* Overlay mount animations */
+  /* Overlay mount animations (toast keeps its canonical rule below) */
   .modal { animation: pop-scale .22s var(--ease-out) both; }
   .cmdk  { animation: pop-scale .20s var(--ease-out) both; }
   .popover { animation: pop-fade .16s var(--ease-out) both; }
-  .toast { animation: toast-in .32s var(--ease-spring) both; }
 
   @keyframes pop-scale { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
   @keyframes pop-fade  { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
-  @keyframes toast-in  { from { opacity: 0; transform: translateY(14px) scale(0.96); } to { opacity: 1; transform: none; } }
 }
 
 /* ====== Dark theme ====== */
@@ -1708,9 +1706,10 @@ a:focus-visible,
   box-shadow: var(--shadow-pop);
   font-size: 13px; font-weight: 500;
   max-width: 90vw;
-  animation: toast-in 160ms ease;
+  animation: toast-in 240ms var(--ease-spring, cubic-bezier(0.32, 0.72, 0, 1));
 }
-@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
 .toast .toast-msg { white-space: nowrap; }
 .toast .toast-undo {
   color: var(--acc-moss); font-weight: 700; font-size: 12.5px;
