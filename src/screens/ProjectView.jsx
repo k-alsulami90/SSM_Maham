@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Icon from "../components/Icon.jsx";
 import Avatar from "../components/Avatar.jsx";
 import { PriorityTag, StatusPill } from "../components/Tags.jsx";
@@ -17,9 +18,11 @@ export default function ProjectView({ projectId, onOpenTask, onOpenVehicle, onOp
   const p = D.findProject(projectId);
   if (!p) return null;
 
-  const rename = () => {
-    const name = window.prompt(t.rename + ":", D.projectName(p, lang));
-    if (name && name.trim()) dispatch({ type: "UPDATE_PROJECT", id: projectId, patch: { name: name.trim(), ar: name.trim() } });
+  const [renaming, setRenaming] = useState(null); // string while editing the name
+  const saveName = () => {
+    const name = (renaming || "").trim();
+    if (name) dispatch({ type: "UPDATE_PROJECT", id: projectId, patch: { name, ar: name } });
+    setRenaming(null);
   };
   const remove = () => {
     if (window.confirm(`${t.delete}: ${D.projectName(p, lang)}?`)) { dispatch({ type: "DELETE_PROJECT", id: projectId }); onBack?.(); }
@@ -47,11 +50,24 @@ export default function ProjectView({ projectId, onOpenTask, onOpenVehicle, onOp
         </div>
         {role === "manager" && (
           <div className="actions">
-            <button className="btn btn-secondary" onClick={rename}><Icon name="settings" size={13} /> {t.rename}</button>
+            <button className="btn btn-secondary" onClick={() => setRenaming(D.projectName(p, lang))}><Icon name="settings" size={13} /> {t.rename}</button>
             <button className="btn btn-danger" onClick={remove}><Icon name="trash" size={13} /> {t.delete}</button>
           </div>
         )}
       </div>
+
+      {renaming !== null && (
+        <form className="quote-form" style={{ marginBottom: 16 }} onSubmit={(e) => { e.preventDefault(); saveName(); }}>
+          <label className="qf-cell">
+            <span className="qf-label">{t.rename}</span>
+            <input className="qf" dir="auto" autoFocus value={renaming} onChange={(e) => setRenaming(e.target.value)} />
+          </label>
+          <div className="qf-row" style={{ justifyContent: "flex-end", gap: 6 }}>
+            <button type="button" className="btn btn-ghost" onClick={() => setRenaming(null)}>{t.cancel}</button>
+            <button type="submit" className="btn btn-primary"><Icon name="check" size={12} /> {t.save}</button>
+          </div>
+        </form>
+      )}
 
       <div className="metric-grid">
         <div className="metric"><div className="label"><Icon name="hub" size={13} /> {t.open_tasks}</div><div className="value">{openTasks.length}</div></div>

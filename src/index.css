@@ -1655,6 +1655,10 @@ select.qf {
   @keyframes pop-fade  { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 }
 
+/* ====== Harden: text overflow (long / unbroken / RTL strings) ====== */
+.list-row > * { min-width: 0; }
+.ttl, .drawer-head .tt, .card .title, .queue-item .title, .metric .value, .panel-head .title { overflow-wrap: anywhere; }
+
 /* ====== Dark theme ====== */
 :root[data-theme="dark"] {
   color-scheme: dark;

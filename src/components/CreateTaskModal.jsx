@@ -59,6 +59,7 @@ export default function CreateTaskModal({ lang, onClose, onCreate, presetType = 
   const [freq, setFreq] = useState("daily");
   const [day, setDay] = useState("sun");
   const [dom, setDom] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
   const titleRef = useRef(null);
   const modalRef = useRef(null);
 
@@ -83,6 +84,8 @@ export default function CreateTaskModal({ lang, onClose, onCreate, presetType = 
   }, [onClose]);
 
   const submit = () => {
+    if (submitting) return;
+    setSubmitting(true);
     onCreate({
       type,
       title: title.trim() || (lang === "ar" ? "مهمة جديدة" : "New task"),

@@ -179,11 +179,12 @@ export default function App() {
     setNavOpen(false);
   };
 
-  const addProject = () => {
-    const name = window.prompt(lang === "ar" ? "اسم المشروع الجديد:" : "New project name:");
-    if (name && name.trim()) {
-      dispatch({ type: "ADD_PROJECT", project: { id: "p" + Date.now().toString(36), name: name.trim(), ar: name.trim() } });
-    }
+  const [newProjName, setNewProjName] = useState(null);
+  const addProject = () => setNewProjName("");
+  const submitNewProject = () => {
+    const name = (newProjName || "").trim();
+    if (name) dispatch({ type: "ADD_PROJECT", project: { id: "p" + Date.now().toString(36), name, ar: name } });
+    setNewProjName(null);
   };
 
   const openVehicle = (id) => {
@@ -327,6 +328,26 @@ export default function App() {
   const banner = offline && (
     <div className="offline-banner"><Icon name="bell" size={13} /> {t.offline_banner}</div>
   );
+  const addProjectModal = newProjName !== null && (
+    <div className="modal-mask" onClick={() => setNewProjName(null)}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" style={{ maxWidth: 420 }}>
+        <div className="modal-head">
+          <div className="h">{t.new_project}</div>
+          <button className="close icon-btn" onClick={() => setNewProjName(null)} aria-label="close"><Icon name="x" size={16} /></button>
+        </div>
+        <div className="modal-body">
+          <label className="qf-cell">
+            <span className="qf-label">{lang === "ar" ? "اسم المشروع" : "Project name"}</span>
+            <input className="qf" dir="auto" autoFocus value={newProjName} onChange={(e) => setNewProjName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") submitNewProject(); }} />
+          </label>
+        </div>
+        <div className="modal-foot" style={{ justifyContent: "flex-end" }}>
+          <button className="btn btn-ghost" onClick={() => setNewProjName(null)}>{t.cancel}</button>
+          <button className="btn btn-primary" onClick={submitNewProject}><Icon name="check" size={13} /> {lang === "ar" ? "إضافة" : "Add"}</button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className={`app-shell ${isMobile ? "is-mobile" : ""} ${navOpen ? "nav-open" : ""}`}>
@@ -358,6 +379,7 @@ export default function App() {
       )}
       {drawer}
       {modal}
+      {addProjectModal}
       {palette}
     </div>
   );
