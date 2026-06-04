@@ -6,6 +6,7 @@ import * as D from "../data/mock.js";
 import * as F from "../data/fleet.js";
 import * as A from "../data/assets.js";
 import { I18N } from "../data/i18n.js";
+import Disclosure from "../components/Disclosure.jsx";
 import { useStore } from "../store/AppStore.jsx";
 
 const catIcon = (cat) => (cat === "vehicle" ? "car" : A.ASSET_CATEGORY_META[cat]?.icon || "box");
@@ -77,63 +78,54 @@ export default function ProjectView({ projectId, onOpenTask, onOpenVehicle, onOp
       </div>
 
       {/* Tasks */}
-      <div className="panel" style={{ marginBottom: 18 }}>
-        <div className="panel-head"><div><div className="title">{t.task_hub}</div><div className="meta">{projTasks.length} {lang === "ar" ? "مهمة" : "tasks"}</div></div></div>
-        <div style={{ padding: "4px 0" }}>
-          {projTasks.slice(0, 12).map((tk) => {
-            const u = D.findUser(tk.assignee);
-            return (
-              <div key={tk.id} className="list-row" style={{ gridTemplateColumns: "1fr 130px 110px 90px" }} onClick={() => onOpenTask(tk.id)}>
-                <div className="ttl"><span className="mono" style={{ color: "var(--ink-300)", fontSize: 11, marginInlineEnd: 8 }}>{tk.id}</span>{D.taskTitle(tk, lang)}<span style={{ marginInlineStart: 8 }}><PriorityTag p={tk.priority} lang={lang} /></span></div>
-                <div className="who"><Avatar user={u} size={20} /><span style={{ fontSize: 12.5 }}>{D.userName(u, lang).split(" ")[0]}</span></div>
-                <div className="due">{D.dueLabel(tk.due, lang)}</div>
-                <div><StatusPill status={tk.status} lang={lang} /></div>
-              </div>
-            );
-          })}
-          {projTasks.length === 0 && <div className="empty">{t.no_tasks}</div>}
-        </div>
-      </div>
+      <Disclosure title={t.task_hub} count={projTasks.length || null} defaultOpen>
+        {projTasks.slice(0, 12).map((tk) => {
+          const u = D.findUser(tk.assignee);
+          return (
+            <div key={tk.id} className="list-row" style={{ gridTemplateColumns: "1fr 130px 110px 90px" }} onClick={() => onOpenTask(tk.id)}>
+              <div className="ttl"><span className="mono" style={{ color: "var(--ink-300)", fontSize: 11, marginInlineEnd: 8 }}>{tk.id}</span>{D.taskTitle(tk, lang)}<span style={{ marginInlineStart: 8 }}><PriorityTag p={tk.priority} lang={lang} /></span></div>
+              <div className="who"><Avatar user={u} size={20} /><span style={{ fontSize: 12.5 }}>{D.userName(u, lang).split(" ")[0]}</span></div>
+              <div className="due">{D.dueLabel(tk.due, lang)}</div>
+              <div><StatusPill status={tk.status} lang={lang} /></div>
+            </div>
+          );
+        })}
+        {projTasks.length === 0 && <div className="empty">{t.no_tasks}</div>}
+      </Disclosure>
 
       {/* Vehicles */}
       {projVehicles.length > 0 && (
-        <div className="panel" style={{ marginBottom: 18 }}>
-          <div className="panel-head"><div><div className="title">{t.vehicles}</div></div></div>
-          <div style={{ padding: "4px 0" }}>
-            {projVehicles.map((v) => {
-              const u = D.findUser(v.custodian);
-              const svc = F.nextService(v);
-              return (
-                <div key={v.id} className="list-row" style={{ gridTemplateColumns: "1fr 120px 110px 90px" }} onClick={() => onOpenVehicle(v.id)}>
-                  <div className="ttl" style={{ display: "flex", alignItems: "center", gap: 8 }}><span className="doc-ico" style={{ width: 24, height: 24, color: "var(--ink-500)" }}><Icon name="car" size={14} /></span>{F.vehicleLabel(v)} <span className="mono" style={{ color: "var(--ink-300)", fontSize: 11 }}>{v.plate}</span></div>
-                  <div className="who"><Avatar user={u} size={20} /><span style={{ fontSize: 12.5 }}>{D.userName(u, lang).split(" ")[0]}</span></div>
-                  <div className="mono" style={{ fontSize: 12.5 }}>{v.odometer.toLocaleString()} {t.km}</div>
-                  <div>{svc.state !== "ok" ? <span style={{ fontSize: 11, fontWeight: 600, color: "var(--hue-high)" }}>{t.service_due}</span> : <span className="muted" style={{ fontSize: 11.5 }}>{F.vehicleStatusLabel(v, lang)}</span>}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <Disclosure title={t.vehicles} count={projVehicles.length}>
+          {projVehicles.map((v) => {
+            const u = D.findUser(v.custodian);
+            const svc = F.nextService(v);
+            return (
+              <div key={v.id} className="list-row" style={{ gridTemplateColumns: "1fr 120px 110px 90px" }} onClick={() => onOpenVehicle(v.id)}>
+                <div className="ttl" style={{ display: "flex", alignItems: "center", gap: 8 }}><span className="doc-ico" style={{ width: 24, height: 24, color: "var(--ink-500)" }}><Icon name="car" size={14} /></span>{F.vehicleLabel(v)} <span className="mono" style={{ color: "var(--ink-300)", fontSize: 11 }}>{v.plate}</span></div>
+                <div className="who"><Avatar user={u} size={20} /><span style={{ fontSize: 12.5 }}>{D.userName(u, lang).split(" ")[0]}</span></div>
+                <div className="mono" style={{ fontSize: 12.5 }}>{v.odometer.toLocaleString()} {t.km}</div>
+                <div>{svc.state !== "ok" ? <span style={{ fontSize: 11, fontWeight: 600, color: "var(--hue-high)" }}>{t.service_due}</span> : <span className="muted" style={{ fontSize: 11.5 }}>{F.vehicleStatusLabel(v, lang)}</span>}</div>
+              </div>
+            );
+          })}
+        </Disclosure>
       )}
 
       {/* Assets */}
       {projAssets.length > 0 && (
-        <div className="panel">
-          <div className="panel-head"><div><div className="title">{t.assets}</div></div></div>
-          <div style={{ padding: "4px 0" }}>
-            {projAssets.map((a) => {
-              const u = D.findUser(a.custodian);
-              return (
-                <div key={a.id} className="list-row" style={{ gridTemplateColumns: "1fr 120px 110px 90px" }} onClick={() => onOpenAsset(a.id)}>
-                  <div className="ttl" style={{ display: "flex", alignItems: "center", gap: 8 }}><span className="doc-ico" style={{ width: 24, height: 24, color: "var(--ink-500)" }}><Icon name={catIcon(a.category)} size={14} /></span><span dir="auto">{A.assetName(a, lang)}</span> <span className="mono" style={{ color: "var(--ink-300)", fontSize: 11 }}>{a.tag}</span></div>
-                  <div className="who"><Avatar user={u} size={20} /><span style={{ fontSize: 12.5 }}>{D.userName(u, lang).split(" ")[0]}</span></div>
-                  <div style={{ fontSize: 12 }}>{A.assetCategoryLabel(a.category, lang)}</div>
-                  <div className="mono" style={{ fontSize: 12.5 }}>{a.purchaseValue ? D.fmtMoney(a.purchaseValue) : "—"}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <Disclosure title={t.assets} count={projAssets.length}>
+          {projAssets.map((a) => {
+            const u = D.findUser(a.custodian);
+            return (
+              <div key={a.id} className="list-row" style={{ gridTemplateColumns: "1fr 120px 110px 90px" }} onClick={() => onOpenAsset(a.id)}>
+                <div className="ttl" style={{ display: "flex", alignItems: "center", gap: 8 }}><span className="doc-ico" style={{ width: 24, height: 24, color: "var(--ink-500)" }}><Icon name={catIcon(a.category)} size={14} /></span><span dir="auto">{A.assetName(a, lang)}</span> <span className="mono" style={{ color: "var(--ink-300)", fontSize: 11 }}>{a.tag}</span></div>
+                <div className="who"><Avatar user={u} size={20} /><span style={{ fontSize: 12.5 }}>{D.userName(u, lang).split(" ")[0]}</span></div>
+                <div style={{ fontSize: 12 }}>{A.assetCategoryLabel(a.category, lang)}</div>
+                <div className="mono" style={{ fontSize: 12.5 }}>{a.purchaseValue ? D.fmtMoney(a.purchaseValue) : "—"}</div>
+              </div>
+            );
+          })}
+        </Disclosure>
       )}
     </div>
   );

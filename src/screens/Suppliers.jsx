@@ -2,6 +2,7 @@ import { useState } from "react";
 import Icon from "../components/Icon.jsx";
 import SupplierRatingModal, { Stars } from "../components/SupplierRatingModal.jsx";
 import EmptyState from "../components/EmptyState.jsx";
+import Disclosure from "../components/Disclosure.jsx";
 import * as D from "../data/mock.js";
 import { I18N } from "../data/i18n.js";
 import { useStore } from "../store/AppStore.jsx";
@@ -212,9 +213,8 @@ function SupplierProfile({ supplier: s, evaluations, maintenance, lang, t, onBac
       </div>
 
       {evals.length > 0 && (
-        <div className="panel" style={{ marginTop: 16 }}>
-          <div className="panel-head"><div><div className="title">{t.rating}</div><div className="meta">{evals.length} {t.evaluations_n}</div></div></div>
-          <div className="workload" style={{ paddingTop: 14 }}>
+        <Disclosure title={t.rating} count={evals.length} defaultOpen>
+          <div className="workload">
             {kpis.map(({ k, label }) => {
               const v = avg(k);
               return (
@@ -226,22 +226,19 @@ function SupplierProfile({ supplier: s, evaluations, maintenance, lang, t, onBac
               );
             })}
           </div>
-        </div>
+        </Disclosure>
       )}
 
-      <div className="panel" style={{ marginTop: 16 }}>
-        <div className="panel-head"><div><div className="title">{t.maintenance}</div><div className="meta">{jobs.length}</div></div></div>
-        <div style={{ padding: "6px 0" }}>
-          {jobs.map((m) => (
-            <div className="list-row" key={m.id} style={{ gridTemplateColumns: "1fr 120px 90px", cursor: "default" }}>
-              <div className="ttl">{m.targetLabel || "—"}{m.description ? <span className="muted" style={{ fontSize: 12 }}> · {m.description}</span> : ""}</div>
-              <div className="mono" style={{ fontSize: 12 }}>{m.logDate || m.scheduledDate || "—"}</div>
-              <div className="mono" style={{ fontWeight: 600 }}>{m.cost ? D.fmtMoney(m.cost) : "—"}</div>
-            </div>
-          ))}
-          {jobs.length === 0 && <div className="empty">{lang === "ar" ? "لا أعمال صيانة بعد" : "No maintenance jobs yet"}</div>}
-        </div>
-      </div>
+      <Disclosure title={t.maintenance} count={jobs.length || null}>
+        {jobs.map((m) => (
+          <div className="list-row" key={m.id} style={{ gridTemplateColumns: "1fr 120px 90px", cursor: "default" }}>
+            <div className="ttl">{m.targetLabel || "—"}{m.description ? <span className="muted" style={{ fontSize: 12 }}> · {m.description}</span> : ""}</div>
+            <div className="mono" style={{ fontSize: 12 }}>{m.logDate || m.scheduledDate || "—"}</div>
+            <div className="mono" style={{ fontWeight: 600 }}>{m.cost ? D.fmtMoney(m.cost) : "—"}</div>
+          </div>
+        ))}
+        {jobs.length === 0 && <div className="empty">{lang === "ar" ? "لا أعمال صيانة بعد" : "No maintenance jobs yet"}</div>}
+      </Disclosure>
     </>
   );
 }

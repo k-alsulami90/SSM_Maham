@@ -10,6 +10,7 @@ import { useStore } from "../store/AppStore.jsx";
 import { useToast } from "../components/Toast.jsx";
 import AssignEditor from "../components/AssignEditor.jsx";
 import EmptyState from "../components/EmptyState.jsx";
+import Disclosure from "../components/Disclosure.jsx";
 
 const ISO_TODAY = D.TODAY.toISOString().slice(0, 10);
 const catIcon = (cat) => (cat === "vehicle" ? "car" : A.ASSET_CATEGORY_META[cat]?.icon || "box");
@@ -526,30 +527,25 @@ function AssetProfile({ asset: a, onBack }) {
       {maintEdit && <AssetForm kind="maint" a={a} editEntry={maintEdit} lang={lang} t={t} me={currentUserId} dispatch={dispatch} notify={notify} onDone={() => setMaintEdit(null)} />}
 
       {/* Documents */}
-      <div className="panel" style={{ marginTop: 18 }}>
-        <div className="panel-head"><div><div className="title">{t.documents}</div></div></div>
-        <div style={{ padding: "6px 0" }}>
-          {(a.documents || []).map((d) => {
-            const ex = d.expires ? F.docExpiryState(d.expires) : null;
-            return (
-              <div className="list-row" key={d.id} style={{ gridTemplateColumns: "30px 1fr 120px 110px 40px", cursor: "default" }}>
-                <span className="doc-ico" style={{ width: 26, height: 26, color: "var(--ink-500)" }}><Icon name="shield" size={14} /></span>
-                <div className="ttl">{A.assetDocKindLabel(d.kind, lang)} <span className="mono muted" style={{ fontSize: 11 }}>{d.number}</span></div>
-                <div className="mono" style={{ fontSize: 12 }}>{d.expires ? `${t.expires} ${d.expires}` : "—"}</div>
-                <div>{ex ? <><ExpiryChip state={ex.state} days={ex.days} lang={lang} t={t} />{ex.state === "ok" && <span className="muted" style={{ fontSize: 11 }}>{t.valid_doc}</span>}</> : <span className="muted" style={{ fontSize: 11 }}>—</span>}</div>
-                {isManager ? <button className="icon-btn" onClick={() => dispatch({ type: "REMOVE_ASSET_DOC", assetId: a.id, docId: d.id })} aria-label={t.remove}><Icon name="trash" size={13} /></button> : <span />}
-              </div>
-            );
-          })}
-          {(a.documents || []).length === 0 && <div className="empty">{t.no_documents}</div>}
-        </div>
-      </div>
+      <Disclosure title={t.documents} count={(a.documents || []).length || null}>
+        {(a.documents || []).map((d) => {
+          const ex = d.expires ? F.docExpiryState(d.expires) : null;
+          return (
+            <div className="list-row" key={d.id} style={{ gridTemplateColumns: "30px 1fr 120px 110px 40px", cursor: "default" }}>
+              <span className="doc-ico" style={{ width: 26, height: 26, color: "var(--ink-500)" }}><Icon name="shield" size={14} /></span>
+              <div className="ttl">{A.assetDocKindLabel(d.kind, lang)} <span className="mono muted" style={{ fontSize: 11 }}>{d.number}</span></div>
+              <div className="mono" style={{ fontSize: 12 }}>{d.expires ? `${t.expires} ${d.expires}` : "—"}</div>
+              <div>{ex ? <><ExpiryChip state={ex.state} days={ex.days} lang={lang} t={t} />{ex.state === "ok" && <span className="muted" style={{ fontSize: 11 }}>{t.valid_doc}</span>}</> : <span className="muted" style={{ fontSize: 11 }}>—</span>}</div>
+              {isManager ? <button className="icon-btn" onClick={() => dispatch({ type: "REMOVE_ASSET_DOC", assetId: a.id, docId: d.id })} aria-label={t.remove}><Icon name="trash" size={13} /></button> : <span />}
+            </div>
+          );
+        })}
+        {(a.documents || []).length === 0 && <div className="empty">{t.no_documents}</div>}
+      </Disclosure>
 
       {/* Maintenance */}
-      <div className="panel" style={{ marginTop: 18 }}>
-        <div className="panel-head"><div><div className="title">{t.maintenance}</div></div></div>
-        <div style={{ padding: "6px 0" }}>
-          {(() => {
+      <Disclosure title={t.maintenance} count={((a.maintenance || []).length + maintenance.filter((m) => m.targetType === "asset" && m.targetId === a.id).length) || null}>
+        {(() => {
             const embedded = (a.maintenance || []).map((m) => ({ key: m.id, embedded: true, raw: m, date: m.date, label: A.assetMaintCatLabel(m.category, lang), vendor: m.vendor, note: lang === "ar" ? m.ar_note : m.note, cost: m.cost, currency: m.currency }));
             const fromHub = maintenance.filter((m) => m.targetType === "asset" && m.targetId === a.id).map((m) => ({ key: "log:" + m.id, date: m.logDate || m.scheduledDate, label: m.maintenanceType === "preventive" ? t.type_preventive : t.type_corrective, vendor: m.vendorName || "", note: m.description, cost: m.cost, currency: "SAR", pending: m.status !== "completed" }));
             const all = [...embedded, ...fromHub].sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));
@@ -570,8 +566,7 @@ function AssetProfile({ asset: a, onBack }) {
               </div>
             ));
           })()}
-        </div>
-      </div>
+      </Disclosure>
     </div>
   );
 }

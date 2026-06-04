@@ -4,26 +4,11 @@ import Avatar from "./Avatar.jsx";
 import { PriorityTag } from "./Tags.jsx";
 import DocumentsSection from "./DocumentsSection.jsx";
 import QuotationsSection from "./QuotationsSection.jsx";
+import Disclosure from "./Disclosure.jsx";
 import * as D from "../data/mock.js";
 import { I18N } from "../data/i18n.js";
 import { useStore } from "../store/AppStore.jsx";
 import { useTaskActions } from "../store/useTaskActions.js";
-
-/* Collapsible section: keeps the panel minimal by hiding secondary detail
-   (subtasks, documents, quotations) behind a quiet header until needed. */
-function Disclosure({ title, count, defaultOpen = false, children }) {
-  const [o, setO] = useState(defaultOpen);
-  return (
-    <div className="disc">
-      <button type="button" className="disc-head" onClick={() => setO((v) => !v)} aria-expanded={o}>
-        <Icon name={o ? "chev_down" : "chev_right"} size={14} style={{ color: "var(--ink-400)" }} />
-        <span>{title}</span>
-        {count != null && <span className="disc-count">{count}</span>}
-      </button>
-      {o && <div className="disc-body">{children}</div>}
-    </div>
-  );
-}
 
 /* Task detail drawer — fields, type-aware actions, quotations/docs,
    subtasks, activity + composer. Reads the live task from the store. */

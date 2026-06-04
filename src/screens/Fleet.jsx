@@ -9,6 +9,7 @@ import { useStore } from "../store/AppStore.jsx";
 import { useToast } from "../components/Toast.jsx";
 import AssignEditor from "../components/AssignEditor.jsx";
 import EmptyState from "../components/EmptyState.jsx";
+import Disclosure from "../components/Disclosure.jsx";
 
 const CUR_MONTH = D.TODAY.toISOString().slice(0, 10).slice(0, 7);
 const ISO_TODAY = D.TODAY.toISOString().slice(0, 10);
@@ -450,32 +451,28 @@ function VehicleProfile({ vehicle: v, onBack }) {
       {maintEdit && <FleetForm kind="maint" v={v} editEntry={maintEdit} lang={lang} t={t} me={currentUserId} dispatch={dispatch} notify={notify} onDone={() => setMaintEdit(null)} />}
 
       {/* Documents */}
-      <div className="panel" style={{ marginTop: 18 }}>
-        <div className="panel-head"><div><div className="title">{t.documents}</div></div>{isManager && <button className="btn btn-ghost right" style={{ fontSize: 12 }} onClick={() => setForm(form === "doc" ? null : "doc")}><Icon name="plus" size={12} /> {t.add_document}</button>}</div>
-        <div style={{ padding: "6px 0" }}>
-          {(v.documents || []).map((d) => {
-            const ex = F.docExpiryState(d.expires);
-            return (
-              <div className="list-row" key={d.id} style={{ gridTemplateColumns: "30px 1fr 120px 110px 40px", cursor: "default" }}>
-                <span className="doc-ico" style={{ width: 26, height: 26, color: "var(--ink-500)" }}><Icon name="shield" size={14} /></span>
-                <div className="ttl">{F.docKindLabel(d.kind, lang)} <span className="mono muted" style={{ fontSize: 11 }}>{d.number}</span></div>
-                <div className="mono" style={{ fontSize: 12 }}>{t.expires} {d.expires}</div>
-                <div><DocChip state={ex.state} days={ex.days} lang={lang} t={t} />{ex.state === "ok" && <span className="muted" style={{ fontSize: 11 }}>{t.valid_doc}</span>}</div>
-                {isManager ? (
-                  <button className="icon-btn" onClick={() => { if (window.confirm(lang === "ar" ? "حذف المستند؟" : "Remove this document?")) dispatch({ type: "REMOVE_VEHICLE_DOC", vehicleId: v.id, docId: d.id }); }} aria-label={t.remove}><Icon name="trash" size={13} /></button>
-                ) : <span />}
-              </div>
-            );
-          })}
-          {(v.documents || []).length === 0 && <div className="empty">{t.no_documents}</div>}
-        </div>
-      </div>
+      <Disclosure title={t.documents} count={(v.documents || []).length || null}>
+        {isManager && <button className="btn btn-ghost" style={{ fontSize: 12, marginBottom: 4 }} onClick={() => setForm(form === "doc" ? null : "doc")}><Icon name="plus" size={12} /> {t.add_document}</button>}
+        {(v.documents || []).map((d) => {
+          const ex = F.docExpiryState(d.expires);
+          return (
+            <div className="list-row" key={d.id} style={{ gridTemplateColumns: "30px 1fr 120px 110px 40px", cursor: "default" }}>
+              <span className="doc-ico" style={{ width: 26, height: 26, color: "var(--ink-500)" }}><Icon name="shield" size={14} /></span>
+              <div className="ttl">{F.docKindLabel(d.kind, lang)} <span className="mono muted" style={{ fontSize: 11 }}>{d.number}</span></div>
+              <div className="mono" style={{ fontSize: 12 }}>{t.expires} {d.expires}</div>
+              <div><DocChip state={ex.state} days={ex.days} lang={lang} t={t} />{ex.state === "ok" && <span className="muted" style={{ fontSize: 11 }}>{t.valid_doc}</span>}</div>
+              {isManager ? (
+                <button className="icon-btn" onClick={() => { if (window.confirm(lang === "ar" ? "حذف المستند؟" : "Remove this document?")) dispatch({ type: "REMOVE_VEHICLE_DOC", vehicleId: v.id, docId: d.id }); }} aria-label={t.remove}><Icon name="trash" size={13} /></button>
+              ) : <span />}
+            </div>
+          );
+        })}
+        {(v.documents || []).length === 0 && <div className="empty">{t.no_documents}</div>}
+      </Disclosure>
 
       {/* Maintenance */}
-      <div className="panel" style={{ marginTop: 18 }}>
-        <div className="panel-head"><div><div className="title">{t.maintenance}</div></div></div>
-        <div style={{ padding: "6px 0" }}>
-          {(() => {
+      <Disclosure title={t.maintenance} count={((v.maintenance || []).length + maintenance.filter((m) => m.targetType === "vehicle" && m.targetId === v.id).length) || null}>
+        {(() => {
             // Embedded vehicle logs + standalone hub work-orders targeting this vehicle.
             const embedded = (v.maintenance || []).map((m) => ({ key: m.id, embedded: true, raw: m, date: m.date, label: F.maintCatLabel(m.category, lang), vendor: m.vendor, note: lang === "ar" ? m.ar_note : m.note, odo: m.odometer, cost: m.cost, currency: m.currency }));
             const fromHub = maintenance.filter((m) => m.targetType === "vehicle" && m.targetId === v.id).map((m) => ({ key: "log:" + m.id, date: m.logDate || m.scheduledDate, label: m.maintenanceType === "preventive" ? t.type_preventive : t.type_corrective, vendor: m.vendorName || "", note: m.description, odo: m.meterReading, cost: m.cost, currency: "SAR", pending: m.status !== "completed" }));
@@ -498,25 +495,21 @@ function VehicleProfile({ vehicle: v, onBack }) {
               </div>
             ));
           })()}
-        </div>
-      </div>
+      </Disclosure>
 
       {/* Fuel */}
-      <div className="panel" style={{ marginTop: 18 }}>
-        <div className="panel-head"><div><div className="title">{t.fuel_log}</div></div>{eff && <div className="right mono" style={{ fontSize: 13 }}>{eff.toFixed(1)} {t.km_per_l}</div>}</div>
-        <div style={{ padding: "6px 0" }}>
-          {[...(v.fuel || [])].sort((a, b) => new Date(b.date) - new Date(a.date)).map((f) => (
-            <div className="list-row" key={f.id} style={{ gridTemplateColumns: "110px 1fr 90px 90px 90px", cursor: "default" }}>
-              <div className="mono" style={{ fontSize: 12 }}>{f.date}</div>
-              <div className="ttl">{f.station}</div>
-              <div className="mono muted" style={{ fontSize: 12 }}>{f.odometer.toLocaleString()}</div>
-              <div className="mono" style={{ fontSize: 12 }}>{f.liters} L</div>
-              <div className="mono" style={{ fontWeight: 600 }}>{D.fmtMoney(f.cost, f.currency)}</div>
-            </div>
-          ))}
-          {(v.fuel || []).length === 0 && <div className="empty">{lang === "ar" ? "لا توجد تعبئات وقود بعد." : "No fuel logs yet."}</div>}
-        </div>
-      </div>
+      <Disclosure title={t.fuel_log} count={(v.fuel || []).length || null}>
+        {[...(v.fuel || [])].sort((a, b) => new Date(b.date) - new Date(a.date)).map((f) => (
+          <div className="list-row" key={f.id} style={{ gridTemplateColumns: "110px 1fr 90px 90px 90px", cursor: "default" }}>
+            <div className="mono" style={{ fontSize: 12 }}>{f.date}</div>
+            <div className="ttl">{f.station}</div>
+            <div className="mono muted" style={{ fontSize: 12 }}>{f.odometer.toLocaleString()}</div>
+            <div className="mono" style={{ fontSize: 12 }}>{f.liters} L</div>
+            <div className="mono" style={{ fontWeight: 600 }}>{D.fmtMoney(f.cost, f.currency)}</div>
+          </div>
+        ))}
+        {(v.fuel || []).length === 0 && <div className="empty">{lang === "ar" ? "لا توجد تعبئات وقود بعد." : "No fuel logs yet."}</div>}
+      </Disclosure>
     </div>
   );
 }
