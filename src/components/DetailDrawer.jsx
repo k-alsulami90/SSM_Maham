@@ -146,61 +146,71 @@ export default function DetailDrawer({ taskId, lang, onClose }) {
       </div>
 
       <div className="drawer-body">
-        <div className="field-grid">
-          <div className="k">{t.filter_status}</div>
-          <div className="v">
-            <span style={{ width: 8, height: 8, borderRadius: 2, background: D.STATUS_META[task.status].dot }} />
-            {D.statusLabel(task.status, lang)}
+        <div className="task-meta">
+          <div className="task-meta-item">
+            <span className="task-meta-label">{t.filter_status}</span>
+            <span className="task-meta-val">
+              <span style={{ width: 8, height: 8, borderRadius: 2, background: D.STATUS_META[task.status].dot }} />
+              {D.statusLabel(task.status, lang)}
+            </span>
           </div>
-          <div className="k">{t.priority}</div>
-          <div className="v"><PriorityTag p={task.priority} lang={lang} /></div>
-          <div className="k">{t.assignee}</div>
-          <div className="v">
-            {role === "manager" ? (
-              <select
-                value={task.assignee || ""}
-                aria-label={t.assignee}
-                onChange={(e) => dispatch({ type: "UPDATE_TASK", id: task.id, patch: { assignee: e.target.value } })}
-                style={{ padding: "3px 6px", border: "1px solid var(--line)", borderRadius: 6, background: "var(--bg-elev)", fontSize: 12.5, maxWidth: "100%" }}
-              >
-                <option value="">—</option>
-                {D.getUsers().map((x) => <option key={x.id} value={x.id}>{D.userName(x, lang)}</option>)}
-              </select>
-            ) : (
-              <><Avatar user={u} size={20} />{D.userName(u, lang)}</>
-            )}
+          <div className="task-meta-item">
+            <span className="task-meta-label">{t.priority}</span>
+            <span className="task-meta-val"><PriorityTag p={task.priority} lang={lang} /></span>
           </div>
-          <div className="k">{t.due}</div>
-          <div className="v mono" style={{ fontSize: 12.5 }}>{D.dueLabel(task.due, lang)}</div>
-          <div className="k">{t.cost}</div>
-          <div className="v">
-            {costEdit !== null ? (
-              <span style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
-                <input type="number" autoFocus value={costEdit} onChange={(e) => setCostEdit(e.target.value)} style={{ width: 90, padding: "3px 6px", border: "1px solid var(--line)", borderRadius: 6, background: "var(--bg-elev)" }} />
-                <span className="muted">SAR</span>
-                <button className="btn btn-primary" style={{ padding: "3px 8px", fontSize: 12 }} onClick={() => { dispatch({ type: "UPDATE_TASK", id: task.id, patch: { cost: Number(costEdit) || 0 } }); setCostEdit(null); }}><Icon name="check" size={11} /></button>
-              </span>
-            ) : (
-              <>
-                <span className="mono">{task.cost ? D.fmtMoney(task.cost) : "—"}</span>
-                {(role === "manager" || task.assignee === me) && (
-                  <button className="btn btn-ghost" style={{ padding: "1px 6px", fontSize: 11, marginInlineStart: 4 }} onClick={() => setCostEdit(String(task.cost || ""))}>
-                    {task.cost ? t.edit : t.add}
-                  </button>
-                )}
-              </>
-            )}
+          <div className="task-meta-item">
+            <span className="task-meta-label">{t.due}</span>
+            <span className="task-meta-val mono">{D.dueLabel(task.due, lang)}</span>
+          </div>
+          <div className="task-meta-item">
+            <span className="task-meta-label">{t.assignee}</span>
+            <span className="task-meta-val">
+              {role === "manager" ? (
+                <select
+                  value={task.assignee || ""}
+                  aria-label={t.assignee}
+                  onChange={(e) => dispatch({ type: "UPDATE_TASK", id: task.id, patch: { assignee: e.target.value } })}
+                  style={{ padding: "3px 6px", border: "1px solid var(--line)", borderRadius: 6, background: "var(--bg-elev)", fontSize: 12.5, maxWidth: "100%" }}
+                >
+                  <option value="">—</option>
+                  {D.getUsers().map((x) => <option key={x.id} value={x.id}>{D.userName(x, lang)}</option>)}
+                </select>
+              ) : (
+                <><Avatar user={u} size={18} />{D.userName(u, lang)}</>
+              )}
+            </span>
+          </div>
+          <div className="task-meta-item">
+            <span className="task-meta-label">{t.cost}</span>
+            <span className="task-meta-val">
+              {costEdit !== null ? (
+                <span style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
+                  <input type="number" autoFocus value={costEdit} onChange={(e) => setCostEdit(e.target.value)} style={{ width: 84, padding: "3px 6px", border: "1px solid var(--line)", borderRadius: 6, background: "var(--bg-elev)" }} />
+                  <span className="muted">SAR</span>
+                  <button className="btn btn-primary" style={{ padding: "3px 8px", fontSize: 12 }} onClick={() => { dispatch({ type: "UPDATE_TASK", id: task.id, patch: { cost: Number(costEdit) || 0 } }); setCostEdit(null); }}><Icon name="check" size={11} /></button>
+                </span>
+              ) : (
+                <>
+                  <span className="mono">{task.cost ? D.fmtMoney(task.cost) : "—"}</span>
+                  {(role === "manager" || task.assignee === me) && (
+                    <button className="btn btn-ghost" style={{ padding: "1px 6px", fontSize: 11 }} onClick={() => setCostEdit(String(task.cost || ""))}>
+                      {task.cost ? t.edit : t.add}
+                    </button>
+                  )}
+                </>
+              )}
+            </span>
           </div>
           {template && (
-            <>
-              <div className="k">{t.repeats}</div>
-              <div className="v">
+            <div className="task-meta-item">
+              <span className="task-meta-label">{t.repeats}</span>
+              <span className="task-meta-val">
                 <Icon name="repeat" size={13} /> {D.recurrenceLabel(template.recurrence, lang)}
-                <span className="muted" style={{ marginInlineStart: 6, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                <span className="muted" style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
                   <Icon name="flame" size={12} /> {D.computeStreak(template.history, template.recurrence.freq)} {t.streak}
                 </span>
-              </div>
-            </>
+              </span>
+            </div>
           )}
         </div>
 
