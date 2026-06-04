@@ -489,12 +489,20 @@ export function AppStoreProvider({ children }) {
       const d = await hydrateAll();
       if (d) {
         if (isStaff) {
-          // One-time migration: seed any empty shared table from current local data.
-          if (!d.vehicles.length && state.vehicles.length) { await pushCollection("vehicles", state.vehicles, [], TO_ROW.vehicles); d.vehicles = state.vehicles; }
-          if (!d.projects.length && state.projects.length) { await pushCollection("projects", state.projects, [], TO_ROW.projects); d.projects = state.projects; }
-          if (!d.tasks.length && state.tasks.length) { await pushCollection("tasks", state.tasks, [], TO_ROW.tasks); d.tasks = state.tasks; }
-          if (!d.assets.length && state.assets.length) { await pushCollection("assets", state.assets, [], TO_ROW.assets); d.assets = state.assets; }
-          if (!d.templates.length && state.templates.length) { await pushCollection("recurring_templates", state.templates, [], TO_ROW.recurring_templates); d.templates = state.templates; }
+          // Seed empty shared tables. Vehicles are reference data kept in code,
+          // so they ALWAYS seed from the code seed when the table is empty — this
+          // both repopulates a manually-wiped table (the local cache may have
+          // been left empty) and delivers updates like the maintenance history.
+          // Other tables fall back to the code seed when the local cache is empty.
+          const seedP = state.projects.length ? state.projects : getProjects();
+          const seedA = state.assets.length ? state.assets : ASSETS;
+          const seedT = state.tasks.length ? state.tasks : TASKS;
+          const seedR = state.templates.length ? state.templates : RECURRING_TEMPLATES;
+          if (!d.vehicles.length && VEHICLES.length) { await pushCollection("vehicles", VEHICLES, [], TO_ROW.vehicles); d.vehicles = VEHICLES; }
+          if (!d.projects.length && seedP.length) { await pushCollection("projects", seedP, [], TO_ROW.projects); d.projects = seedP; }
+          if (!d.tasks.length && seedT.length) { await pushCollection("tasks", seedT, [], TO_ROW.tasks); d.tasks = seedT; }
+          if (!d.assets.length && seedA.length) { await pushCollection("assets", seedA, [], TO_ROW.assets); d.assets = seedA; }
+          if (!d.templates.length && seedR.length) { await pushCollection("recurring_templates", seedR, [], TO_ROW.recurring_templates); d.templates = seedR; }
         }
         prevRef.current = { tasks: d.tasks, vehicles: d.vehicles, assets: d.assets, templates: d.templates, projects: d.projects, suppliers: d.suppliers, maintenance: d.maintenance, evaluations: d.evaluations };
         dispatch({ type: "HYDRATE", data: d });
