@@ -71,7 +71,7 @@ export default function TaskHub({ onOpen, openId, onCreate, defaultView = "kanba
             <Icon name="check" size={13} /> {t.archived}{archivedCount > 0 ? ` (${archivedCount})` : ""}
           </button>
           <button className="btn btn-secondary" onClick={exportCsv}><Icon name="download" size={13} /> {t.export}</button>
-          <button className="btn btn-primary" onClick={onCreate}><Icon name="plus" size={13} /> {t.new_task}</button>
+          {role === "manager" && <button className="btn btn-primary" onClick={onCreate}><Icon name="plus" size={13} /> {t.new_task}</button>}
         </div>
       </div>
 

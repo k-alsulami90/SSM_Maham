@@ -47,7 +47,8 @@
       "Bash(node .claude/skills/impeccable/scripts/context.mjs)",
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('.impeccable/design.json','utf8'\\)\\); console.log\\('design.json OK'\\)\")",
       "Bash(node .claude/skills/impeccable/scripts/critique-storage.mjs slug \"src/screens/Fleet.jsx\")",
-      "Bash(node .claude/skills/impeccable/scripts/detect.mjs --json src/screens/Fleet.jsx)"
+      "Bash(node .claude/skills/impeccable/scripts/detect.mjs --json src/screens/Fleet.jsx)",
+      "Bash(node .claude/skills/impeccable/scripts/detect.mjs --json src)"
     ]
   }
 }

@@ -1,6 +1,5 @@
 import Icon from "../components/Icon.jsx";
 import Avatar from "../components/Avatar.jsx";
-import { Sparkline } from "../components/Tags.jsx";
 import { MetricCard, WorkloadBar, Donut } from "../components/DashWidgets.jsx";
 import * as D from "../data/mock.js";
 import { I18N } from "../data/i18n.js";
@@ -55,10 +54,10 @@ export default function ManagerDashboard({ onOpen, onNav }) {
       </div>
 
       <div className="metric-grid">
-        <MetricCard icon="layers" label={t.metric_active} value={activeN} delta="+3 this week" deltaDir="up" spark={<Sparkline points={[6, 8, 7, 9, 11, 10, 12]} />} onClick={() => onNav("hub")} />
-        <MetricCard icon="check" label={t.metric_completion} value={Math.round((done / total) * 100)} unit="%" delta="+8%" deltaDir="up" spark={<Sparkline points={[62, 64, 66, 70, 72, 74, 78]} color="var(--acc-moss)" />} />
-        <MetricCard icon="clock" label={t.metric_overdue} value={overdue} delta={lang === "ar" ? "بحاجة لمتابعة" : "needs follow-up"} deltaDir="flat" spark={<Sparkline points={[2, 3, 3, 4, 3, 3, 4]} color="var(--hue-urgent)" />} onClick={() => onNav("hub")} />
-        <MetricCard icon="bolt" label={t.metric_review} value={review.length} delta={lang === "ar" ? "بحاجة لإجراء" : "action needed"} deltaDir="flat" spark={<Sparkline points={[1, 1, 2, 2, 3, 2, 3]} color="var(--hue-high)" />} onClick={() => onNav("approvals")} />
+        <MetricCard icon="layers" label={t.metric_active} value={activeN} onClick={() => onNav("hub")} />
+        <MetricCard icon="check" label={t.metric_completion} value={total ? Math.round((done / total) * 100) : 0} unit="%" />
+        <MetricCard icon="clock" label={t.metric_overdue} value={overdue} onClick={() => onNav("hub")} />
+        <MetricCard icon="bolt" label={t.metric_review} value={review.length} onClick={() => onNav("approvals")} />
       </div>
 
       <div className="callout" style={{ marginBottom: 18 }}>
