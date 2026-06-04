@@ -55,6 +55,8 @@ export default function DetailDrawer({ taskId, lang, onClose }) {
 
   const isOwner = task.assignee === me;
   const hasPick = !!task.selectedQuotationId;
+  const overdue = task.status !== "done" && D.daysUntil(task.due) < 0;
+  const canEditCost = role === "manager" || task.assignee === me;
 
   // ===== Type-aware action bar =====
   const memberActions = () => {
@@ -146,84 +148,77 @@ export default function DetailDrawer({ taskId, lang, onClose }) {
       </div>
 
       <div className="drawer-body">
-        <div className="task-meta">
-          <div className="task-meta-item">
-            <span className="task-meta-label">{t.filter_status}</span>
-            <span className="task-meta-val">
-              <span style={{ width: 8, height: 8, borderRadius: 2, background: D.STATUS_META[task.status].dot }} />
-              {D.statusLabel(task.status, lang)}
-            </span>
-          </div>
-          <div className="task-meta-item">
-            <span className="task-meta-label">{t.priority}</span>
-            <span className="task-meta-val"><PriorityTag p={task.priority} lang={lang} /></span>
-          </div>
-          <div className="task-meta-item">
-            <span className="task-meta-label">{t.due}</span>
-            <span className="task-meta-val mono">{D.dueLabel(task.due, lang)}</span>
-          </div>
-          <div className="task-meta-item">
-            <span className="task-meta-label">{t.assignee}</span>
-            <span className="task-meta-val">
-              {role === "manager" ? (
+        {/* Hero: current status (context) */}
+        <div className="task-hero">
+          <span className="task-status">
+            <span className="dot" style={{ background: D.STATUS_META[task.status].dot }} />
+            {D.statusLabel(task.status, lang)}
+          </span>
+        </div>
+
+        {/* The next action is the focal point */}
+        {(mAct || mgrAct) && <div className="task-actions">{mAct}{mgrAct}</div>}
+
+        {/* Facts: assignee · due · priority · cost · repeats */}
+        <div className="task-facts">
+          <span className="fact">
+            {role === "manager" ? (
+              <>
+                <Avatar user={u} size={18} />
                 <select
-                  value={task.assignee || ""}
+                  className="fact-select"
                   aria-label={t.assignee}
+                  value={task.assignee || ""}
                   onChange={(e) => dispatch({ type: "UPDATE_TASK", id: task.id, patch: { assignee: e.target.value } })}
-                  style={{ padding: "3px 6px", border: "1px solid var(--line)", borderRadius: 6, background: "var(--bg-elev)", fontSize: 12.5, maxWidth: "100%" }}
                 >
                   <option value="">—</option>
                   {D.getUsers().map((x) => <option key={x.id} value={x.id}>{D.userName(x, lang)}</option>)}
                 </select>
-              ) : (
-                <><Avatar user={u} size={18} />{D.userName(u, lang)}</>
-              )}
-            </span>
-          </div>
-          <div className="task-meta-item">
-            <span className="task-meta-label">{t.cost}</span>
-            <span className="task-meta-val">
-              {costEdit !== null ? (
-                <span style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
-                  <input type="number" autoFocus value={costEdit} onChange={(e) => setCostEdit(e.target.value)} style={{ width: 84, padding: "3px 6px", border: "1px solid var(--line)", borderRadius: 6, background: "var(--bg-elev)" }} />
-                  <span className="muted">SAR</span>
-                  <button className="btn btn-primary" style={{ padding: "3px 8px", fontSize: 12 }} onClick={() => { dispatch({ type: "UPDATE_TASK", id: task.id, patch: { cost: Number(costEdit) || 0 } }); setCostEdit(null); }}><Icon name="check" size={11} /></button>
-                </span>
-              ) : (
-                <>
-                  <span className="mono">{task.cost ? D.fmtMoney(task.cost) : "—"}</span>
-                  {(role === "manager" || task.assignee === me) && (
-                    <button className="btn btn-ghost" style={{ padding: "1px 6px", fontSize: 11 }} onClick={() => setCostEdit(String(task.cost || ""))}>
-                      {task.cost ? t.edit : t.add}
-                    </button>
-                  )}
-                </>
-              )}
-            </span>
-          </div>
-          {template && (
-            <div className="task-meta-item">
-              <span className="task-meta-label">{t.repeats}</span>
-              <span className="task-meta-val">
-                <Icon name="repeat" size={13} /> {D.recurrenceLabel(template.recurrence, lang)}
-                <span className="muted" style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
-                  <Icon name="flame" size={12} /> {D.computeStreak(template.history, template.recurrence.freq)} {t.streak}
-                </span>
+              </>
+            ) : (
+              <><Avatar user={u} size={18} /> {D.userName(u, lang)}</>
+            )}
+          </span>
+
+          <span className={`fact ${overdue ? "fact-urgent" : ""}`}>
+            <Icon name="calendar" size={13} style={{ color: overdue ? "var(--hue-urgent)" : "var(--ink-400)" }} /> {D.dueLabel(task.due, lang)}
+          </span>
+
+          <span className="fact"><PriorityTag p={task.priority} lang={lang} /></span>
+
+          <span className="fact">
+            <Icon name="activity" size={13} style={{ color: "var(--ink-400)" }} />
+            {costEdit !== null ? (
+              <span style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
+                <input type="number" autoFocus value={costEdit} onChange={(e) => setCostEdit(e.target.value)} style={{ width: 80, padding: "2px 6px", border: "1px solid var(--line)", borderRadius: 6, background: "var(--bg-elev)" }} />
+                <span className="muted">SAR</span>
+                <button className="btn btn-primary" style={{ padding: "2px 7px", fontSize: 12 }} onClick={() => { dispatch({ type: "UPDATE_TASK", id: task.id, patch: { cost: Number(costEdit) || 0 } }); setCostEdit(null); }}><Icon name="check" size={11} /></button>
               </span>
-            </div>
+            ) : (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <span className="mono">{task.cost ? D.fmtMoney(task.cost) : "—"}</span>
+                {canEditCost && <button className="btn btn-ghost" style={{ padding: "1px 6px", fontSize: 11 }} onClick={() => setCostEdit(String(task.cost || ""))}>{task.cost ? t.edit : t.add}</button>}
+              </span>
+            )}
+          </span>
+
+          {template && (
+            <span className="fact">
+              <Icon name="repeat" size={13} style={{ color: "var(--ink-400)" }} /> {D.recurrenceLabel(template.recurrence, lang)}
+              <span className="muted" style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><Icon name="flame" size={12} /> {D.computeStreak(template.history, template.recurrence.freq)}</span>
+            </span>
           )}
         </div>
 
-        {(mAct || mgrAct) && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{mAct}{mgrAct}</div>}
-
+        {/* Manager-only: archive / delete, de-emphasized */}
         {role === "manager" && (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
             {task.status === "done" && (
-              <button className="btn btn-secondary" onClick={() => dispatch({ type: "UPDATE_TASK", id: task.id, patch: { archived: !task.archived } })}>
+              <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => dispatch({ type: "UPDATE_TASK", id: task.id, patch: { archived: !task.archived } })}>
                 <Icon name={task.archived ? "arrow_up" : "check"} size={12} /> {task.archived ? t.unarchive : t.archive}
               </button>
             )}
-            <button className="btn btn-danger" onClick={() => { if (window.confirm(`${t.delete}: ${D.taskTitle(task, lang)}?`)) { dispatch({ type: "DELETE_TASK", id: task.id }); onClose(); } }}>
+            <button className="btn btn-ghost" style={{ fontSize: 12, color: "var(--hue-urgent)", marginInlineStart: "auto" }} onClick={() => { if (window.confirm(`${t.delete}: ${D.taskTitle(task, lang)}?`)) { dispatch({ type: "DELETE_TASK", id: task.id }); onClose(); } }}>
               <Icon name="trash" size={12} /> {t.delete}
             </button>
           </div>
@@ -264,6 +259,11 @@ export default function DetailDrawer({ taskId, lang, onClose }) {
               </span>
             )}
           </div>
+          {task.subtasks?.length > 0 && (
+            <div className="subtask-progress">
+              <div className="fill" style={{ width: `${(task.subtasks.filter((s) => s.done).length / task.subtasks.length) * 100}%` }} />
+            </div>
+          )}
           <div className="subtasks">
             {(task.subtasks || []).map((s) => (
               <button key={s.id} className={`subtask ${s.done ? "done" : ""}`} onClick={() => dispatch({ type: "TOGGLE_SUBTASK", id: task.id, subtaskId: s.id })}>
