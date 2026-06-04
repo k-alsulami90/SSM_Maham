@@ -232,26 +232,23 @@ export function Inbox({ onOpen }) {
         </div>
       </div>
       <div className="list-wrap">
-        <div className="list-row header">
+        <div className="list-row header" style={{ gridTemplateColumns: "28px 1fr 120px 90px 36px" }}>
           <span></span>
           <span>{lang === "ar" ? "المهمة" : "Task"}</span>
-          <span>{t.assignee}</span>
           <span>{t.due}</span>
           <span>{t.filter_status}</span>
           <span></span>
         </div>
         {mine.map((tk) => {
-          const u = D.findUser(tk.assignee);
           const overdue = D.daysUntil(tk.due) < 0;
           return (
-            <div key={tk.id} className="list-row" onClick={() => onOpen(tk.id)}>
+            <div key={tk.id} className="list-row" style={{ gridTemplateColumns: "28px 1fr 120px 90px 36px" }} onClick={() => onOpen(tk.id)}>
               <div className="check" />
               <div className="ttl">
                 <span className="mono" style={{ color: "var(--ink-300)", fontSize: 11, marginInlineEnd: 8 }}>{tk.id}</span>
                 {D.taskTitle(tk, lang)}
                 <span style={{ marginInlineStart: 8 }}><PriorityTag p={tk.priority} lang={lang} /></span>
               </div>
-              <div className="who"><Avatar user={u} size={20} /><span style={{ fontSize: 12.5 }}>{D.userName(u, lang).split(" ")[0]}</span></div>
               <div className={`due ${overdue ? "overdue" : ""}`}>{D.dueLabel(tk.due, lang)}</div>
               <div><StatusPill status={tk.status} lang={lang} /></div>
               <Icon name="more" size={14} className="dots" />

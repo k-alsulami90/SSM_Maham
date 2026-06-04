@@ -60,16 +60,25 @@ export default function ManagerDashboard({ onOpen, onNav }) {
         <MetricCard icon="bolt" label={t.metric_review} value={review.length} onClick={() => onNav("approvals")} />
       </div>
 
-      <div className="callout" style={{ marginBottom: 18 }}>
-        <Icon name="flame" size={16} />
-        <div>
-          <b>{t.bottlenecks}: </b>
-          {t.bottleneck_msg}
-        </div>
-        <button className="btn btn-ghost" style={{ marginInlineStart: "auto", color: "var(--acc-forest)", fontWeight: 600 }} onClick={() => onNav("approvals")}>
-          {t.open_queue} <Icon name="arrow_right" size={12} />
-        </button>
-      </div>
+      {(() => {
+        // Only surface a bottleneck when there actually is one (overdue first,
+        // then a review backlog). No always-on generic banner.
+        const msg = overdue > 0
+          ? (lang === "ar" ? `${overdue} ${overdue === 1 ? "مهمة متأخرة بحاجة" : "مهام متأخرة بحاجة"} لمتابعة عاجلة.` : `${overdue} overdue ${overdue === 1 ? "task needs" : "tasks need"} follow-up.`)
+          : review.length >= 3
+            ? (lang === "ar" ? `${review.length} مهام بانتظار مراجعتك.` : `${review.length} tasks are waiting for your review.`)
+            : null;
+        if (!msg) return null;
+        return (
+          <div className="callout" style={{ marginBottom: 18 }}>
+            <Icon name="flame" size={16} />
+            <div><b>{t.bottlenecks}: </b>{msg}</div>
+            <button className="btn btn-ghost" style={{ marginInlineStart: "auto", color: "var(--acc-forest)", fontWeight: 600 }} onClick={() => onNav("approvals")}>
+              {t.open_queue} <Icon name="arrow_right" size={12} />
+            </button>
+          </div>
+        );
+      })()}
 
       <div className="dash-split">
         <div className="panel">
