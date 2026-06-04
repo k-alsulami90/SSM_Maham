@@ -430,6 +430,14 @@ function AssetProfile({ asset: a, onBack }) {
   const warranty = (a.documents || []).map((d) => (d.expires ? { d, ...F.docExpiryState(d.expires) } : null)).filter(Boolean).sort((x, y) => x.days - y.days)[0];
   const [form, setForm] = useState(null);
   const [maintEdit, setMaintEdit] = useState(null);
+  const [menu, setMenu] = useState(false);
+
+  // Surface what needs attention now, above the tiles.
+  const alerts = [];
+  if (svc && svc.state === "overdue") alerts.push({ tone: "urgent", icon: "wrench", text: t.service_overdue });
+  else if (svc && svc.state !== "ok") alerts.push({ tone: "high", icon: "wrench", text: t.service_due });
+  if (warranty && warranty.state === "expired") alerts.push({ tone: "urgent", icon: "shield", text: `${t.warranty} · ${t.expired}` });
+  else if (warranty && warranty.state === "soon") alerts.push({ tone: "high", icon: "shield", text: `${t.warranty} · ${warranty.days}${t.days}` });
 
   return (
     <div className="content">
@@ -448,15 +456,42 @@ function AssetProfile({ asset: a, onBack }) {
             {A.assetLocation(a, lang) && <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="pin" size={13} /> {A.assetLocation(a, lang)}</span>}
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {isManager && <button className="btn btn-secondary" onClick={() => setForm(form === "edit" ? null : "edit")}><Icon name="settings" size={13} /> {t.edit_details}</button>}
-          {isManager && <button className="btn btn-secondary" onClick={() => setForm(form === "maint" ? null : "maint")}><Icon name="wrench" size={13} /> {t.add_maintenance}</button>}
-          {isManager && <button className="btn btn-secondary" onClick={() => setForm(form === "doc" ? null : "doc")}><Icon name="shield" size={13} /> {t.add_document}</button>}
-          {isManager && <button className="btn btn-secondary" onClick={() => setForm(form === "assign" ? null : "assign")}><Icon name="pin" size={13} /> {t.reassign}</button>}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
           <button className="btn btn-primary" onClick={() => setForm(form === "issue" ? null : "issue")}><Icon name="bell" size={13} /> {t.report_issue}</button>
-          {isManager && <button className="btn btn-danger" onClick={() => { if (window.confirm(`${t.delete}: ${A.assetName(a, lang)}?`)) { dispatch({ type: "DELETE_ASSET", id: a.id }); onBack(); } }}><Icon name="trash" size={13} /> {t.delete}</button>}
+          {isManager && (
+            <div style={{ position: "relative" }}>
+              <button className="btn btn-secondary" onClick={() => setMenu((m) => !m)} aria-haspopup="true" aria-expanded={menu}><Icon name="more" size={14} /> {lang === "ar" ? "المزيد" : "More"}</button>
+              {menu && (
+                <div className="popover" style={{ top: "calc(100% + 6px)", insetInlineEnd: 0, minWidth: 210 }} onMouseLeave={() => setMenu(false)}>
+                  <button className="pop-item" onClick={() => { setMenu(false); setForm("edit"); }}><Icon name="settings" size={15} /> {t.edit_details}</button>
+                  <button className="pop-item" onClick={() => { setMenu(false); setForm("maint"); }}><Icon name="wrench" size={15} /> {t.add_maintenance}</button>
+                  <button className="pop-item" onClick={() => { setMenu(false); setForm("doc"); }}><Icon name="shield" size={15} /> {t.add_document}</button>
+                  <button className="pop-item" onClick={() => { setMenu(false); setForm("assign"); }}><Icon name="pin" size={15} /> {t.reassign}</button>
+                  <hr />
+                  <button className="pop-item" style={{ color: "var(--hue-urgent)" }} onClick={() => { setMenu(false); if (window.confirm(`${t.delete}: ${A.assetName(a, lang)}?`)) { dispatch({ type: "DELETE_ASSET", id: a.id }); onBack(); } }}><Icon name="trash" size={15} /> {t.delete}</button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {alerts.length > 0 ? (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+          {alerts.map((al, i) => {
+            const c = al.tone === "urgent" ? { fg: "var(--hue-urgent)", bg: "var(--hue-urgent-bg)" } : { fg: "var(--hue-high)", bg: "var(--hue-high-bg)" };
+            return (
+              <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: c.fg, background: c.bg, padding: "6px 12px", borderRadius: 999 }} dir="auto">
+                <Icon name={al.icon} size={13} /> {al.text}
+              </span>
+            );
+          })}
+        </div>
+      ) : (
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 500, color: "var(--hue-low)", background: "var(--hue-low-bg)", padding: "6px 12px", borderRadius: 999, marginTop: 14 }}>
+          <Icon name="approve" size={13} /> {t.all_good}
+        </div>
+      )}
 
       {form === "edit" && (
         <AssetEditForm a={a} lang={lang} t={t} dispatch={dispatch} notify={notify} onDone={() => setForm(null)} />

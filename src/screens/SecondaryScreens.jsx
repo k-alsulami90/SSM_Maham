@@ -190,7 +190,7 @@ export function ActivityFeed({ onOpen }) {
                 )}
                 <div className={`bub ${a.kind === "system" ? "system" : ""}`}>
                   <span className="who">{D.userName(who, lang)}</span> {lang === "ar" ? a.ar : a.text}
-                  {" — "}
+                  {" · "}
                   <button onClick={() => onOpen(a.task.id)} style={{ color: "var(--acc-forest)", fontWeight: 500 }}>
                     {a.task.id}
                   </button>

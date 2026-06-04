@@ -55,7 +55,7 @@ export default function CreateTaskModal({ lang, onClose, onCreate, presetType = 
   const [priority, setPriority] = useState("med");
   const [project, setProject] = useState(() => D.getProjects()[0]?.id || "");
   const [assignee, setAssignee] = useState(() => (D.getUsers().find((u) => u.role === "member") || D.getUsers()[0])?.id || "");
-  const [due, setDue] = useState("2026-06-05");
+  const [due, setDue] = useState(() => { const d = new Date(D.TODAY); d.setDate(d.getDate() + 3); return d.toISOString().slice(0, 10); });
   const [freq, setFreq] = useState("daily");
   const [day, setDay] = useState("sun");
   const [dom, setDom] = useState(1);
