@@ -48,7 +48,8 @@
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('.impeccable/design.json','utf8'\\)\\); console.log\\('design.json OK'\\)\")",
       "Bash(node .claude/skills/impeccable/scripts/critique-storage.mjs slug \"src/screens/Fleet.jsx\")",
       "Bash(node .claude/skills/impeccable/scripts/detect.mjs --json src/screens/Fleet.jsx)",
-      "Bash(node .claude/skills/impeccable/scripts/detect.mjs --json src)"
+      "Bash(node .claude/skills/impeccable/scripts/detect.mjs --json src)",
+      "Bash(node -e \"const {FLEET_SEED}=await import\\('./src/data/vehicles.data.js'\\); for\\(const v of FLEET_SEED\\) console.log\\(v.id, '|', v.plate, '|', v.make, v.model, '|', v.driverNote||'', '|', v.project, '| odo', v.odometer\\);\")"
     ]
   }
 }

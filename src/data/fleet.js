@@ -87,16 +87,43 @@ export function docExpiryState(expires) {
   return { state: "ok", days };
 }
 
+// Each car's own oil-change cadence: the median gap between consecutive
+// maintenance odometer readings. Falls back to the schedule's everyKm when
+// there isn't enough history. Rounded to a clean 500 km step.
+export function serviceIntervalKm(v) {
+  const odos = (v.maintenance || [])
+    .map((m) => Number(m.odometer))
+    .filter((n) => Number.isFinite(n) && n > 0)
+    .sort((a, b) => a - b);
+  const gaps = [];
+  for (let i = 1; i < odos.length; i++) {
+    const g = odos[i] - odos[i - 1];
+    if (g > 500 && g < 30000) gaps.push(g); // skip duplicate readings / outliers
+  }
+  if (!gaps.length) return v.schedule?.everyKm || 10000;
+  gaps.sort((a, b) => a - b);
+  const mid = Math.floor(gaps.length / 2);
+  const median = gaps.length % 2 ? gaps[mid] : (gaps[mid - 1] + gaps[mid]) / 2;
+  return Math.max(2000, Math.round(median / 500) * 500);
+}
+
 // Next preventive service — due by time AND odometer, whichever first.
+// The interval and the "last service" anchor come from the car's own history
+// when available, so each vehicle follows its real pattern.
 export function nextService(v) {
-  const s = v.schedule;
-  const dueKm = s.lastServiceKm + s.everyKm;
-  const dueDate = addMonths(s.lastServiceDate, s.everyMonths);
+  const s = v.schedule || {};
+  const everyKm = serviceIntervalKm(v);
+  const withOdo = (v.maintenance || []).filter((m) => Number(m.odometer) > 0);
+  const last = withOdo.length ? withOdo.reduce((a, b) => (Number(b.odometer) > Number(a.odometer) ? b : a)) : null;
+  const lastServiceKm = last ? Number(last.odometer) : (s.lastServiceKm ?? v.odometer);
+  const lastServiceDate = last ? last.date : s.lastServiceDate;
+  const dueKm = lastServiceKm + everyKm;
+  const dueDate = addMonths(lastServiceDate, s.everyMonths || 12);
   const kmLeft = dueKm - v.odometer;
   const daysLeft = daysUntil(dueDate);
   const overdue = kmLeft <= 0 || daysLeft < 0;
   const soon = !overdue && (kmLeft <= 500 || daysLeft <= 14);
-  return { dueKm, dueDate, kmLeft, daysLeft, state: overdue ? "overdue" : soon ? "soon" : "ok" };
+  return { dueKm, dueDate, kmLeft, daysLeft, everyKm, state: overdue ? "overdue" : soon ? "soon" : "ok" };
 }
 
 // Fuel efficiency (km per liter): distance between first and last fill ÷
