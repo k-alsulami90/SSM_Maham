@@ -73,6 +73,9 @@ export default function DetailDrawer({ taskId, lang, onClose }) {
   const hasPick = !!task.selectedQuotationId;
   const overdue = task.status !== "done" && D.daysUntil(task.due) < 0;
   const canEditCost = role === "manager" || task.assignee === me;
+  const acts = task.activity || [];
+  const msgs = acts.filter((a) => a.kind !== "system");   // people's comments
+  const sysLog = acts.filter((a) => a.kind === "system");  // system events
 
   // ===== Type-aware action bar =====
   const memberActions = () => {
@@ -262,12 +265,46 @@ export default function DetailDrawer({ taskId, lang, onClose }) {
           <DocumentsSection task={task} lang={lang} t={t} currentUserId={me} dispatch={dispatch} bare />
         </Disclosure>
 
-        <div>
-          <div className="section-title">{t.discussion}</div>
-          <div className="activity">
-            {(task.activity || []).map((a, i) => {
-              const who = D.findUser(a.who);
-              if (a.kind === "system") {
+        {/* Discussion: people's messages + composer */}
+        <Disclosure title={t.discussion} count={msgs.length || null} defaultOpen={msgs.length > 0}>
+          {msgs.length > 0 && (
+            <div className="activity">
+              {msgs.map((a, i) => {
+                const who = D.findUser(a.who);
+                return (
+                  <div className="entry" key={i}>
+                    <span className="av" style={{ background: who?.color }}>{who?.initials}</span>
+                    <div className="bub">
+                      <span className="who">{D.userName(who, lang)}</span>
+                      <span className="when">{a.ts ? D.timeAgo(a.ts, lang) : a.at}</span>
+                      <div style={{ marginTop: 3, color: "var(--ink-700)" }}>{lang === "ar" ? a.ar : a.text}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div className="composer">
+            <textarea
+              dir="auto"
+              placeholder={t.write_update}
+              rows={2}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") sendComment(); }}
+            />
+            <div className="row">
+              <button className="btn btn-primary send" onClick={sendComment} disabled={!comment.trim()}><Icon name="send" size={12} /> {t.send}</button>
+            </div>
+          </div>
+        </Disclosure>
+
+        {/* Activity log (system events) — collapsed; expand to read the history */}
+        {sysLog.length > 0 && (
+          <Disclosure title={t.activity} count={sysLog.length}>
+            <div className="activity">
+              {sysLog.map((a, i) => {
+                const who = D.findUser(a.who);
                 return (
                   <div className="entry" key={i}>
                     <div className="av system"><Icon name="activity" size={11} /></div>
@@ -278,34 +315,10 @@ export default function DetailDrawer({ taskId, lang, onClose }) {
                     </div>
                   </div>
                 );
-              }
-              return (
-                <div className="entry" key={i}>
-                  <span className="av" style={{ background: who?.color }}>{who?.initials}</span>
-                  <div className="bub">
-                    <span className="who">{D.userName(who, lang)}</span>
-                    <span className="when">{a.ts ? D.timeAgo(a.ts, lang) : a.at}</span>
-                    <div style={{ marginTop: 3, color: "var(--ink-700)" }}>{lang === "ar" ? a.ar : a.text}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="composer">
-          <textarea
-            dir="auto"
-            placeholder={t.write_update}
-            rows={2}
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") sendComment(); }}
-          />
-          <div className="row">
-            <button className="btn btn-primary send" onClick={sendComment} disabled={!comment.trim()}><Icon name="send" size={12} /> {t.send}</button>
-          </div>
-        </div>
+              })}
+            </div>
+          </Disclosure>
+        )}
 
         {/* Manager-only maintenance, kept quiet at the very bottom */}
         {role === "manager" && (
