@@ -1674,6 +1674,26 @@ select.qf {
 .list-row > * { min-width: 0; }
 .ttl, .drawer-head .tt, .card .title, .queue-item .title, .metric .value, .panel-head .title { overflow-wrap: anywhere; }
 
+/* ====== Motion (Pass 5): scoped, purposeful, reduced-motion safe ====== */
+@media (prefers-reduced-motion: no-preference) {
+  /* Kanban cards: capped sibling stagger on appear (and on column move). */
+  .column-body .card { animation: card-in .30s var(--ease-out) both; }
+  .column-body .card:nth-child(2) { animation-delay: .04s; }
+  .column-body .card:nth-child(3) { animation-delay: .08s; }
+  .column-body .card:nth-child(4) { animation-delay: .12s; }
+  .column-body .card:nth-child(5) { animation-delay: .16s; }
+  .column-body .card:nth-child(n+6) { animation-delay: .20s; }
+  @keyframes card-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* Grouped asset register: smooth reveal on expand. */
+  .asset-group-items { animation: reveal .20s var(--ease-out) both; }
+  @keyframes reveal { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+  /* Subtask completion: a clean check pop (no bounce). */
+  .subtask.done .check { animation: check-pop .25s var(--ease-out) both; }
+  @keyframes check-pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+}
+
 /* ====== Dark theme ====== */
 :root[data-theme="dark"] {
   color-scheme: dark;

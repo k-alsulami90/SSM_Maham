@@ -259,7 +259,7 @@ export function AssetRegister({ onOpenVehicle, onOpenAsset, onNav }) {
                           <span style={{ fontWeight: 700, fontSize: 17, color: "var(--acc-forest)" }} className="mono">×{g.total}</span>
                         </button>
                         {isOpen && (
-                          <div style={{ background: "var(--bg-sand)", padding: "2px 0" }}>
+                          <div className="asset-group-items" style={{ background: "var(--bg-sand)", padding: "2px 0" }}>
                             {g.items.map((r) => {
                               const u = D.findUser(r.custodian);
                               return (
