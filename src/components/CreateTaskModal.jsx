@@ -5,15 +5,35 @@ import { I18N } from "../data/i18n.js";
 
 function ChipDropdown({ icon, label, value, active, options, onChange }) {
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState(null);
+  const btnRef = useRef(null);
+  const rtl = typeof document !== "undefined" && document.documentElement.dir === "rtl";
+
+  // Fixed positioning so the menu isn't clipped by the scrollable modal body.
+  // (Mobile turns .popover into a bottom sheet via !important, which still wins.)
+  const toggle = () => {
+    if (open) return setOpen(false);
+    const r = btnRef.current.getBoundingClientRect();
+    setPos({ top: r.bottom + 6, left: r.left, right: window.innerWidth - r.right, width: r.width });
+    setOpen(true);
+  };
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => { window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); };
+  }, [open]);
+
   return (
     <div style={{ position: "relative" }}>
-      <button className={`chip ${active ? "active" : ""}`} onClick={() => setOpen((o) => !o)} type="button">
+      <button ref={btnRef} className={`chip ${active ? "active" : ""}`} onClick={toggle} type="button">
         <Icon name={icon} size={11} className="ico" />
         {value || label}
         <Icon name="chev_down" size={10} className="ico" />
       </button>
-      {open && (
-        <div className="popover" style={{ top: "calc(100% + 4px)", insetInlineStart: 0, minWidth: 160 }} onMouseLeave={() => setOpen(false)}>
+      {open && pos && (
+        <div className="popover" style={{ position: "fixed", top: pos.top, [rtl ? "right" : "left"]: rtl ? pos.right : pos.left, minWidth: Math.max(160, pos.width) }} onMouseLeave={() => setOpen(false)}>
           {options.map((o) => (
             <button key={o.id} type="button" className="pop-item" onClick={() => { onChange(o.id); setOpen(false); }}>
               {o.label}

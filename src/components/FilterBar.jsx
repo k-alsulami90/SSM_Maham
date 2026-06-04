@@ -1,14 +1,33 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Icon from "./Icon.jsx";
 import * as D from "../data/mock.js";
 import { I18N } from "../data/i18n.js";
 
 function FilterPill({ icon, label, value, options, getLabel, onChange }) {
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState(null);
+  const btnRef = useRef(null);
+  const rtl = typeof document !== "undefined" && document.documentElement.dir === "rtl";
   const selected = value ? options.find((o) => o.id === value) : null;
+
+  // Fixed positioning so the menu escapes the scrollable content container.
+  const toggle = () => {
+    if (open) return setOpen(false);
+    const r = btnRef.current.getBoundingClientRect();
+    setPos({ top: r.bottom + 6, left: r.left, right: window.innerWidth - r.right, width: r.width });
+    setOpen(true);
+  };
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => { window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); };
+  }, [open]);
+
   return (
     <div style={{ position: "relative" }}>
-      <button className="filter-pill" onClick={() => setOpen(!open)} type="button">
+      <button ref={btnRef} className="filter-pill" onClick={toggle} type="button">
         <Icon name={icon} size={11} />
         {selected ? <b style={{ fontWeight: 600 }}>{getLabel(selected)}</b> : label}
         {selected ? (
@@ -25,8 +44,8 @@ function FilterPill({ icon, label, value, options, getLabel, onChange }) {
           <Icon name="chev_down" size={10} />
         )}
       </button>
-      {open && (
-        <div className="popover" style={{ top: "calc(100% + 4px)", insetInlineStart: 0, minWidth: 180 }} onMouseLeave={() => setOpen(false)}>
+      {open && pos && (
+        <div className="popover" style={{ position: "fixed", top: pos.top, [rtl ? "right" : "left"]: rtl ? pos.right : pos.left, minWidth: Math.max(180, pos.width) }} onMouseLeave={() => setOpen(false)}>
           {options.map((o) => (
             <button
               key={o.id}

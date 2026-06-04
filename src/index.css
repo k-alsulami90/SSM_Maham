@@ -1453,6 +1453,14 @@ select.qf {
    Mobile app chrome — bottom tab bar + native-feel adjustments.
    Reuses every desktop screen; only the navigation shell changes.
    ============================================================ */
+/* Mid-width laptops/tablets: wide multi-column tables scroll horizontally
+   instead of crushing their columns. Phones (≤560) keep the collapsed layout;
+   roomy desktops (≥920) are untouched. */
+@media (min-width: 561px) and (max-width: 920px) {
+  .list-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .list-wrap .list-row { min-width: 640px; }
+}
+
 .mob-tabbar { display: none; }
 
 .is-mobile .mob-tabbar {
