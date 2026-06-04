@@ -37,7 +37,7 @@ export default function Kanban({ tasks, lang, onOpen, selectedId, onMove, onCrea
               <span className="dotline" style={{ background: D.STATUS_META[s].dot }} />
               <span className="name">{D.statusLabel(s, lang)}</span>
               <span className="pill">{items.length}</span>
-              {onCreate && <button className="add" title="Add" onClick={onCreate}><Icon name="plus" size={13} /></button>}
+              {onCreate && <button className="add" title={lang === "ar" ? "إضافة مهمة" : "Add task"} aria-label={lang === "ar" ? "إضافة مهمة" : "Add task"} onClick={onCreate}><Icon name="plus" size={13} /></button>}
             </div>
             <div
               className={`column-body ${overCol === s && dragId ? "drop-over" : ""}`}

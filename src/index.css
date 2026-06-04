@@ -1694,6 +1694,18 @@ select.qf {
   @keyframes check-pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 }
 
+/* ====== Reduced-motion safety net (a11y) ======
+   Belt-and-suspenders: even with our gated animations, honor the user's OS
+   setting by collapsing any animation/transition to near-instant. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ====== Dark theme ====== */
 :root[data-theme="dark"] {
   color-scheme: dark;

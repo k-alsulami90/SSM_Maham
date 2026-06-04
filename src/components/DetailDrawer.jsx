@@ -159,6 +159,7 @@ export default function DetailDrawer({ taskId, lang, onClose }) {
             {role === "manager" ? (
               <select
                 value={task.assignee || ""}
+                aria-label={t.assignee}
                 onChange={(e) => dispatch({ type: "UPDATE_TASK", id: task.id, patch: { assignee: e.target.value } })}
                 style={{ padding: "3px 6px", border: "1px solid var(--line)", borderRadius: 6, background: "var(--bg-elev)", fontSize: 12.5, maxWidth: "100%" }}
               >
